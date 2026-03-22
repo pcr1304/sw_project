@@ -1,0 +1,7 @@
+let ang = 45
+
+projectile p1 {
+    launch_from (0, 0, 0)
+    angle       ang
+    speed       30
+}

@@ -1,0 +1,18 @@
+# C:\Users\chenn\AppData\Local\opam\4.14.1\bin\dune.exe exec bin/main.exe
+# OCAMLPARAM: unset
+# Shared cache: enabled-except-user-rules
+# Shared cache location:
+# C:\Users\chenn\AppData\Local\Microsoft\Windows\INetCache\dune\db
+# Workspace root:
+# "C:\\Users\\chenn\\OneDrive\\Pictures\\OneDrive\\Desktop\\sw_project\\ProjX"
+# Auto-detected concurrency: 14
+# Dune context:
+#  { name = "default"
+#  ; kind = "default"
+#  ; profile = Dev
+#  ; merlin = true
+#  ; fdo_target_exe = None
+#  ; build_dir = In_build_dir "default"
+#  ; instrument_with = []
+#  }
+$ C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlc.opt.exe -config > C:\Users\chenn\AppData\Local\Temp\dune_696312_output

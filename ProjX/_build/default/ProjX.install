@@ -1,0 +1,8 @@
+lib: [
+  "_build/install/default/lib/ProjX/META"
+  "_build/install/default/lib/ProjX/dune-package"
+  "_build/install/default/lib/ProjX/opam"
+]
+bin: [
+  "_build/install/default/bin/ProjX.exe"
+]
