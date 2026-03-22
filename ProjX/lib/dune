@@ -1,2 +1,3 @@
 (library
- (name ProjX))
+ (name projx)
+ (modules my_utils tokenizer ast parser pretty))

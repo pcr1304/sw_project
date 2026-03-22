@@ -1,9 +1,12 @@
-open ProjX
+open Projx
 open My_utils
 open Tokenizer
-let source = read_file "./input/queries.jp"
- 
+open Parser
+open Pretty
+
+let source = read_file "./input/queries.px"
+
 let () =
-  let tokens = tokenize (explode source) in 
-  let tokens_as_str = print_tokens tokens in
-  print_endline tokens_as_str 
+  let tokens = tokenize (explode source) in
+  let ast    = parse tokens in
+  print_endline (print_program ast)

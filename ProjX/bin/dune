@@ -1,4 +1,4 @@
 (executable
- (public_name ProjX)
+ (public_name projx)
  (name main)
- (libraries ProjX))
+ (libraries projx))
