@@ -3,6 +3,9 @@
 (** @canonical Projx.Ast *)
 module Ast = Projx__Ast
 
+(** @canonical Projx.Checker *)
+module Checker = Projx__Checker
+
 (** @canonical Projx.My_utils *)
 module My_utils = Projx__My_utils
 

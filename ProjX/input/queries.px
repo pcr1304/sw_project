@@ -1,7 +1,55 @@
 let ang = 45
 
 projectile p1 {
-    launch_from (0, 0, 0)
-    angle       ang
-    speed       30
+  angle ang
+  speed 30
+  launch_from (0, 0, 0)
+}
+
+projectile p2 {
+  angle 60
+  speed 25
+}
+
+simulate {
+  gravity 9.8
+  plot p1
+  plot p2
+  range p1
+  max_height p1
+  collide p1 p2
+  bounce p1 times 3 restitution 0.7
+  check max_height.p1() > 20
+}
+
+fork p1 {
+  branch "Earth" {
+    gravity 9.8
+    bounce times 2 restitution 0.7
+  }
+  branch "Mars" {
+    gravity 3.72
+  }
+}
+
+for ang from 20 to 70 step 10 {
+  projectile p {
+    angle ang
+    speed 40
+  }
+  let r = max_range.p()
+  if r > 150 {
+    simulate {
+      gravity 9.8
+      plot p
+      max_height p
+      range p
+    }
+  }
+}
+
+game {
+  planet mars
+  level 3
+  lives 5
 }

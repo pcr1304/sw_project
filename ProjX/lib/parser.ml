@@ -78,18 +78,16 @@ and parse_term_rest lhs tokens =
       let (rhs, tokens) = parse_factor tokens in
       parse_term_rest (Binop (Div, lhs, rhs)) tokens
   | _ -> (lhs, tokens)
-
-and parse_factor tokens =
+ and parse_factor tokens =
   match (peek tokens).kind with
   | INT | FLOAT ->
       let tok = peek tokens in
       (Num (float_of_string tok.lit_val), advance tokens)
-  | IDF ->
-      (* could be a bare identifier OR the start of a dot query *)
+  | IDF
+  | RANGE | MAX_RANGE | MAX_HEIGHT | MAX_RECTANGLE | MIN_VEL | COLLIDE | MIN_DIST ->
       let tok   = peek tokens in
       let rest1 = advance tokens in
       if (peek rest1).kind = DOT then
-        (* dot query — back to full token list so parse_dot_query can re-read the name *)
         parse_dot_query_as_expr tokens
       else
         (Var tok.text, rest1)
@@ -100,7 +98,6 @@ and parse_factor tokens =
       (e, tokens)
   | tok ->
       failwith (Printf.sprintf "Parse Error: unexpected token '%s' in expression" (str_tok tok))
-
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Dot-query parser
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *)
