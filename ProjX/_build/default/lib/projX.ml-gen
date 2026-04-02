@@ -6,6 +6,9 @@ module Ast = Projx__Ast
 (** @canonical Projx.Checker *)
 module Checker = Projx__Checker
 
+(** @canonical Projx.Error *)
+module Error = Projx__Error
+
 (** @canonical Projx.My_utils *)
 module My_utils = Projx__My_utils
 

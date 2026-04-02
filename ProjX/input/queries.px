@@ -34,7 +34,6 @@ fork p1 {
 
 for ang from 20 to 70 step 10 {
   projectile p {
-    angle ang
     speed 40
   }
   let r = max_range.p()

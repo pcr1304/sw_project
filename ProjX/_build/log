@@ -15,11 +15,4 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlc.opt.exe -config > C:\Users\chenn\AppData\Local\Temp\dune_37bfbc_output
-$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamldep.opt.exe -modules -impl lib/parser.ml) > _build/default/lib/.projx.objs/projx__Parser.impl.d
-$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlc.opt.exe -short-paths -keep-locs -warn-error +a -g -bin-annot -I lib/.projx.objs/byte -no-alias-deps -opaque -open Projx -o lib/.projx.objs/byte/projx__Parser.cmo -c -impl lib/parser.ml)
-$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlc.opt.exe -short-paths -keep-locs -warn-error +a -g -bin-annot -I bin/.main.eobjs/byte -I lib/.projx.objs/byte -no-alias-deps -opaque -o bin/.main.eobjs/byte/dune__exe__Main.cmi -c -intf bin/main.mli)
-$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlopt.opt.exe -short-paths -keep-locs -warn-error +a -g -I bin/.main.eobjs/byte -I bin/.main.eobjs/native -I lib/.projx.objs/byte -I lib/.projx.objs/native -intf-suffix .ml -no-alias-deps -opaque -o bin/.main.eobjs/native/dune__exe__Main.cmx -c -impl bin/main.ml)
-$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlopt.opt.exe -short-paths -keep-locs -warn-error +a -g -I lib/.projx.objs/byte -I lib/.projx.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Projx -o lib/.projx.objs/native/projx__Parser.cmx -c -impl lib/parser.ml)
-$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlopt.opt.exe -short-paths -keep-locs -warn-error +a -g -a -o lib/projx.cmxa lib/.projx.objs/native/projx.cmx lib/.projx.objs/native/projx__Tokenizer.cmx lib/.projx.objs/native/projx__Ast.cmx lib/.projx.objs/native/projx__Pretty.cmx lib/.projx.objs/native/projx__Parser.cmx lib/.projx.objs/native/projx__My_utils.cmx lib/.projx.objs/native/projx__Checker.cmx)
-$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlopt.opt.exe -short-paths -keep-locs -warn-error +a -g -o bin/main.exe lib/projx.cmxa bin/.main.eobjs/native/dune__exe__Main.cmx)
+$ C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlc.opt.exe -config > C:\Users\chenn\AppData\Local\Temp\dune_3d3f3b_output
