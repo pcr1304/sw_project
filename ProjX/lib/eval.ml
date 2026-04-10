@@ -149,6 +149,8 @@ and eval_simulate env stmts =
   ) 9.8 stmts in
 
   Printf.printf "\n── simulate (g = %.2f) ──\n" gravity;
+  let range_annos = ref [] in
+  let max_h_annos = ref [] in
 
   (* second pass — execute each statement *)
   List.iter (fun s ->
@@ -168,6 +170,7 @@ and eval_simulate env stmts =
         let proj = get_projectile p env.projectiles in
         let (x0, _, _) = proj.launch_from in
         let r = range proj.angle proj.speed gravity +. x0 in
+        range_annos := (p, r) :: !range_annos;
         Printf.printf "range %s = %.4f m\n" p r
 
     | SMaxRange p ->
@@ -180,6 +183,7 @@ and eval_simulate env stmts =
         let proj = get_projectile p env.projectiles in
         let (_, y0, _) = proj.launch_from in
         let mh = max_height proj.angle proj.speed gravity +. y0 in
+        max_h_annos := (p, mh) :: !max_h_annos;
         Printf.printf "max_height %s = %.4f m\n" p mh
 
     | SMaxRect p ->
@@ -262,6 +266,8 @@ and eval_simulate env stmts =
         Printf.printf "check: %s\n" (if result then "PASS ✓" else "FAIL ✗")
 
   ) stmts;
+  let label = Printf.sprintf "Sim (g=%.1f)" gravity in
+  emitted_scenarios := !emitted_scenarios @ [SimScenario (label, gravity, env.projectiles, !range_annos, !max_h_annos)];
   Printf.printf "── end simulate ──\n\n"
 
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -288,7 +294,9 @@ and eval_fork env name branches =
          List.iteri (fun i (x, _, ang, spd) ->
            let rng = range ang spd g in
            Printf.printf "    hop %d: x0=%.2f range=%.2f\n" (i+1) x rng
-         ) arcs)
+         ) arcs);
+    let label = Printf.sprintf "Fork: %s (g=%.1f)" br.label g in
+    emitted_scenarios := !emitted_scenarios @ [SimScenario (label, g, [(name, proj)], [(name, r)], [(name, mh)])]
   ) branches;
   Printf.printf "── end fork ──\n\n"
 
@@ -339,6 +347,8 @@ and eval_stmt env stmt =
       Printf.printf "\n── game mode ──\n";
       Printf.printf "planet=%s (g=%.2f)  level=%.0f  lives=%.0f\n"
         planet g lvl lvs;
+      let label = Printf.sprintf "Game: %s Lv%.0f" planet lvl in
+      emitted_scenarios := !emitted_scenarios @ [GameScenario (label, planet, g, lvl, lvs)];
       Printf.printf "── end game ──\n\n";
       env
 

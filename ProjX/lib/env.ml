@@ -24,6 +24,20 @@ let empty_env = {
   projectiles = [];
 }
 
+type bounce_val = {
+  times : int;
+  restitution : float;
+}
+
+type scenario =
+  | SimScenario of string * float * (string * projectile_val) list * (string * float) list * (string * float) list
+    (* label, gravity, projectiles, range_annotations, max_height_annotations *)
+  | GameScenario of string * string * float * float * float
+    (* label, planet, gravity, level, lives *)
+
+let emitted_scenarios : scenario list ref = ref []
+
+
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Variable functions
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *)

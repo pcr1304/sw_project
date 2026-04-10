@@ -37,8 +37,11 @@ function computeSimBounds(projectiles, gravity) {
         const theta = p.angle * (Math.PI / 180);
         const x0 = p.launch_from ? p.launch_from[0] : 0;
         const y0 = p.launch_from ? p.launch_from[1] : 0;
-        const r = (p.speed * p.speed * Math.sin(2 * theta)) / gravity + x0;
-        const mh = (p.speed * Math.sin(theta)) ** 2 / (2 * gravity) + y0;
+        const vY = p.speed * Math.sin(theta);
+        const vX = p.speed * Math.cos(theta);
+        const timeToGround = (vY + Math.sqrt(vY * vY + 2 * gravity * y0)) / gravity;
+        const r = x0 + vX * timeToGround;
+        const mh = (vY * vY) / (2 * gravity) + y0;
         maxX = Math.max(maxX, r);
         maxY = Math.max(maxY, mh);
     });
@@ -165,13 +168,23 @@ function drawLiveArc(ctx, p, g, groundY, scale, maxT, originX) {
     ctx.beginPath();
     ctx.moveTo(startX, startY);
 
+    const vY = speed * Math.sin(theta);
+    const vX = speed * Math.cos(theta);
+    const timeToGround = (vY + Math.sqrt(vY * vY + 2 * g * ly)) / g;
+
     let t = 0, curX = startX, curY = 0, hit = false;
     while (t <= maxT) {
-        const px = speed * Math.cos(theta) * t;
-        const py = speed * Math.sin(theta) * t - 0.5 * g * t * t;
+        if (t > 0 && t >= timeToGround) {
+            curX = startX + (vX * timeToGround) * scale;
+            curY = startY - groundY;
+            hit = true;
+            ctx.lineTo(curX, groundY);
+            break;
+        }
+        const px = vX * t;
+        const py = vY * t - 0.5 * g * t * t;
         curX = startX + px * scale;
         curY = py * scale;
-        if (curY <= 0 && t > 0) { curY = 0; hit = true; ctx.lineTo(curX, startY - curY); break; }
         ctx.lineTo(curX, startY - curY);
         t += 0.05;
     }
@@ -200,11 +213,16 @@ function drawAnnotations(ctx, canvas, data, groundY, scale, originX) {
         if (anno.type === "max_height") {
             const timeToPeak = (p.speed * Math.sin(theta)) / data.gravity;
             const peakX = originX + lx * scale + p.speed * Math.cos(theta) * timeToPeak * scale;
-            const peakY = groundY - ly * scale - anno.value * scale;
+            const peakY = groundY - anno.value * scale;
+            const startY = groundY - ly * scale;
             ctx.beginPath(); ctx.setLineDash([4, 4]);
             ctx.moveTo(peakX, groundY); ctx.lineTo(peakX, peakY);
+            if (ly > 0) {
+                ctx.moveTo(peakX - 5, startY); ctx.lineTo(peakX + 5, startY);
+            }
             ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
-            const lbl = `max_h: ${anno.value.toFixed(2)}m`;
+            const hFromY = anno.value - ly;
+            const lbl = ly > 0 ? `max: ${anno.value.toFixed(1)}m (from y0: ${hFromY.toFixed(1)}m)` : `max_h: ${anno.value.toFixed(2)}m`;
             const tw = ctx.measureText(lbl).width + 16;
             ctx.fillStyle = "rgba(19,20,26,0.9)";
             ctx.fillRect(peakX + 6, peakY - 12, tw, 22);

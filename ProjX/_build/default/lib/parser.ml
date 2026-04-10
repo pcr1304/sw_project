@@ -93,6 +93,13 @@ and parse_factor tokens =
         parse_dot_query_as_expr tokens
       else
         (Var tok.text, rest1)
+  | RANGE | MAX_RANGE | MAX_HEIGHT | MAX_RECTANGLE | MIN_VEL ->
+      let tok   = peek tokens in
+      let rest1 = advance tokens in
+      if (peek rest1).kind = DOT then
+        parse_dot_query_as_expr tokens
+      else
+        failwith (Printf.sprintf "Parse Error: keyword '%s' must be followed by '.' in expressions" tok.text)
   | LEFT_PAR ->
       let tokens = advance tokens in
       let (e, tokens) = parse_expr tokens in
@@ -216,6 +223,14 @@ and parse_cond_atom tokens =
       (* boolean dot query *)
       let (dq, tokens) = parse_dot_query tokens in
       (BoolDotQ dq, tokens)
+  | COLLIDE | MIN_DIST ->
+      let tok = peek tokens in
+      let rest1 = advance tokens in
+      if (peek rest1).kind = DOT then
+        let (dq, tokens) = parse_dot_query tokens in
+        (BoolDotQ dq, tokens)
+      else
+        failwith (Printf.sprintf "Parse Error: keyword '%s' must be followed by '.' in condition" tok.text)
   | _ ->
       let (lhs, tokens) = parse_expr tokens in
       let (op,  tokens) = parse_cmpop tokens in
