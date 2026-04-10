@@ -29,9 +29,11 @@ type bounce_val = {
   restitution : float;
 }
 
+type bounce_arcs = float * float * float * float
+
 type scenario =
-  | SimScenario of string * float * (string * projectile_val) list * (string * float) list * (string * float) list
-    (* label, gravity, projectiles, range_annotations, max_height_annotations *)
+  | SimScenario of string * float * (string * projectile_val) list * (string * float) list * (string * float) list * (string * bounce_arcs list) list * (string * string * float * float * float) list
+    (* label, gravity, projectiles, range_annotations, max_height_annotations, bounces (id, arcs), collisions (id1, id2, t, x, y) *)
   | GameScenario of string * string * float * float * float
     (* label, planet, gravity, level, lives *)
 

@@ -151,6 +151,8 @@ and eval_simulate env stmts =
   Printf.printf "\n── simulate (g = %.2f) ──\n" gravity;
   let range_annos = ref [] in
   let max_h_annos = ref [] in
+  let bnc_annos = ref [] in
+  let col_annos = ref [] in
 
   (* second pass — execute each statement *)
   List.iter (fun s ->
@@ -210,10 +212,11 @@ and eval_simulate env stmts =
           ~angle2:proj2.angle ~speed2:proj2.speed ~x02 ~y02
           ~gravity
         in
-        if hit then
+        if hit then begin
+          col_annos := (p1, p2, t, cx, cy) :: !col_annos;
           Printf.printf "collide %s %s: YES at t=%.2fs (%.1f, %.1f)\n"
             p1 p2 t cx cy
-        else
+        end else
           Printf.printf "collide %s %s: NO\n" p1 p2
 
     | SCollisionVel (p1, p2) ->
@@ -255,6 +258,7 @@ and eval_simulate env stmts =
         let r    = eval_expr env r_e in
         let (x0, y0, _) = proj.launch_from in
         let arcs = bounce_arcs proj.angle proj.speed gravity r n x0 y0 in
+        bnc_annos := (p, arcs) :: !bnc_annos;
         Printf.printf "bounce %s: %d hops restitution=%.2f\n" p n r;
         List.iteri (fun i (x, _, ang, spd) ->
           let rng = range ang spd gravity in
@@ -267,7 +271,7 @@ and eval_simulate env stmts =
 
   ) stmts;
   let label = Printf.sprintf "Sim (g=%.1f)" gravity in
-  emitted_scenarios := !emitted_scenarios @ [SimScenario (label, gravity, env.projectiles, !range_annos, !max_h_annos)];
+  emitted_scenarios := !emitted_scenarios @ [SimScenario (label, gravity, env.projectiles, !range_annos, !max_h_annos, !bnc_annos, !col_annos)];
   Printf.printf "── end simulate ──\n\n"
 
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -281,6 +285,7 @@ and eval_fork env name branches =
     let g  = eval_expr env br.br_gravity in
     let r  = range proj.angle proj.speed g in
     let mh = max_height proj.angle proj.speed g in
+    let bnc_annos = ref [] in
     Printf.printf "branch \"%s\" (g=%.2f): range=%.2f m  max_height=%.2f m\n"
       br.label g r mh;
     (match br.br_bounce with
@@ -290,13 +295,14 @@ and eval_fork env name branches =
          let rest = eval_expr env r_e in
          let (x0, y0, _) = proj.launch_from in
          let arcs = bounce_arcs proj.angle proj.speed g rest n x0 y0 in
+         bnc_annos := [(name, arcs)];
          Printf.printf "  bounce: %d hops restitution=%.2f\n" n rest;
          List.iteri (fun i (x, _, ang, spd) ->
            let rng = range ang spd g in
            Printf.printf "    hop %d: x0=%.2f range=%.2f\n" (i+1) x rng
          ) arcs);
     let label = Printf.sprintf "Fork: %s (g=%.1f)" br.label g in
-    emitted_scenarios := !emitted_scenarios @ [SimScenario (label, g, [(name, proj)], [(name, r)], [(name, mh)])]
+    emitted_scenarios := !emitted_scenarios @ [SimScenario (label, g, [(name, proj)], [(name, r)], [(name, mh)], !bnc_annos, [])]
   ) branches;
   Printf.printf "── end fork ──\n\n"
 

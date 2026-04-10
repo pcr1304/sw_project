@@ -119,19 +119,32 @@ function renderSimulation(ctx, canvas, data, onFinish) {
         if (data.projectiles) {
             data.projectiles.forEach((proj, i) => {
                 ctx.strokeStyle = COLORS[i % COLORS.length];
+                const bounceData = data.bounces ? data.bounces.find(b => b.p === proj.id) : null;
                 if (data.launched) {
-                    const done = drawLiveArc(ctx, proj, g, groundY, scale, simTime, originX);
+                    const done = drawLiveArcSequence(ctx, proj, bounceData, g, groundY, scale, simTime, originX);
                     if (!done) allDone = false;
                 } else {
-                    drawLiveArc(ctx, proj, g, groundY, scale, 0, originX);
+                    drawLiveArcSequence(ctx, proj, bounceData, g, groundY, scale, 0, originX);
                 }
             });
         }
 
-        if (!data.launched) {
+        if (!data.launched || allDone) {
             drawAnnotations(ctx, canvas, data, groundY, scale, originX);
-        } else if (allDone) {
-            drawAnnotations(ctx, canvas, data, groundY, scale, originX);
+
+            if (data.collisions && data.collisions.length > 0) {
+                data.collisions.forEach(col => {
+                    const cx = originX + col.x * scale;
+                    const cy = groundY - col.y * scale;
+                    ctx.beginPath(); ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(245, 90, 110, 0.35)"; ctx.fill();
+                    ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = "#f55a6e"; ctx.fill();
+                    ctx.fillStyle = "#fff"; ctx.font = "bold 12px 'Inter', sans-serif";
+                    ctx.fillText("BOOM!", cx + 18, cy - 14);
+                });
+            }
+
             if (onFinish) onFinish();
         } else {
             simTime += 0.05;
@@ -151,53 +164,72 @@ function stopSimulation() {
     if (simAnimId) { cancelAnimationFrame(simAnimId); simAnimId = null; }
 }
 
-function drawLiveArc(ctx, p, g, groundY, scale, maxT, originX) {
-    const angle = p.angle || 45;
-    const speed = p.speed || 30;
-    const lx = p.launch_from ? p.launch_from[0] : 0;
-    const ly = p.launch_from ? p.launch_from[1] : 0;
-    const theta = angle * (Math.PI / 180);
-    const startX = originX + lx * scale;
-    const startY = groundY - ly * scale;
+function drawLiveArcSequence(ctx, p, bounceData, g, groundY, scale, maxT, originX) {
+    const arcs = bounceData ? bounceData.arcs : [[
+        p.launch_from ? p.launch_from[0] : 0,
+        p.launch_from ? p.launch_from[1] : 0,
+        p.angle || 45,
+        p.speed || 30
+    ]];
 
-    ctx.beginPath();
-    ctx.arc(startX, startY, 3, 0, Math.PI * 2);
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.fill();
+    let globalT = maxT;
+    let hitGroundTotal = true;
 
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
+    for (let i = 0; i < arcs.length; i++) {
+        const [lx, ly, angle, speed] = arcs[i];
+        const theta = angle * (Math.PI / 180);
+        const startX = originX + lx * scale;
+        const startY = groundY - ly * scale;
 
-    const vY = speed * Math.sin(theta);
-    const vX = speed * Math.cos(theta);
-    const timeToGround = (vY + Math.sqrt(vY * vY + 2 * g * ly)) / g;
+        const vY = speed * Math.sin(theta);
+        const vX = speed * Math.cos(theta);
+        // Avoid division by zero if vY is very tiny
+        const timeToGround = (vY + Math.sqrt(Math.max(0, vY * vY + 2 * g * ly))) / g;
 
-    let t = 0, curX = startX, curY = 0, hit = false;
-    while (t <= maxT) {
-        if (t > 0 && t >= timeToGround) {
-            curX = startX + (vX * timeToGround) * scale;
-            curY = startY - groundY;
-            hit = true;
-            ctx.lineTo(curX, groundY);
-            break;
+        if (i === 0) {
+            ctx.beginPath();
+            ctx.arc(startX, startY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
         }
-        const px = vX * t;
-        const py = vY * t - 0.5 * g * t * t;
-        curX = startX + px * scale;
-        curY = py * scale;
-        ctx.lineTo(curX, startY - curY);
-        t += 0.05;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+
+        let t = 0, curX = startX, curY = 0;
+
+        while (t <= globalT && t <= timeToGround) {
+            if (t > 0 && t >= timeToGround) {
+                curX = startX + (vX * timeToGround) * scale;
+                curY = startY - groundY;
+                ctx.lineTo(curX, groundY);
+                break;
+            }
+            const px = vX * t;
+            const py = vY * t - 0.5 * g * t * t;
+            curX = startX + px * scale;
+            curY = py * scale;
+            ctx.lineTo(curX, startY - curY);
+            t += 0.05;
+        }
+
+        ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.stroke();
+
+        if (globalT <= timeToGround) {
+            ctx.beginPath();
+            ctx.arc(curX, startY - curY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.shadowBlur = 8; ctx.shadowColor = ctx.strokeStyle;
+            ctx.fill(); ctx.shadowBlur = 0;
+
+            hitGroundTotal = false;
+            break;
+        } else {
+            globalT -= timeToGround;
+        }
     }
 
-    ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(curX, startY - curY, 5, 0, Math.PI * 2);
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.shadowBlur = 8; ctx.shadowColor = ctx.strokeStyle;
-    ctx.fill(); ctx.shadowBlur = 0;
-
-    return hit;
+    return hitGroundTotal;
 }
 
 function drawAnnotations(ctx, canvas, data, groundY, scale, originX) {
