@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProjX – Projectile Simulator</title>
+  <meta name="description" content="Interactive projectile physics simulator and game built with ProjX DSL">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="mode-simulate">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="logo">Proj<span>X</span></div>
+    <div class="tabs">
+      <button class="tab-btn active" data-mode="simulate">Simulate</button>
+      <button class="tab-btn" data-mode="game">Game</button>
+    </div>
+  </header>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+
+      <!-- SIMULATE controls -->
+      <div class="sim-controls">
+        <div class="section-title">Projectiles</div>
+
+        <div id="proj-list" class="proj-list">
+          <!-- populated by app.js -->
+        </div>
+
+        <div class="btn-row">
+          <button id="add-proj" class="btn btn-primary" style="flex:1">+ Add</button>
+        </div>
+
+        <div class="section-title" style="margin-top:8px">Environment</div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Gravity</span>
+            <span class="control-value" id="sim-gravity-val">9.8</span>
+          </div>
+          <input type="range" id="sim-gravity" min="0.5" max="30" step="0.1" value="9.8">
+        </div>
+
+        <button id="sim-launch-btn" class="add-btn"
+          style="margin-top:16px; background:linear-gradient(135deg,#38d9f5,#a78bfa);">▶ Launch Simulation</button>
+      </div>
+
+      <!-- GAME controls -->
+      <div class="game-controls">
+        <div class="section-title">Planet</div>
+
+        <div class="planet-preview" id="planet-preview"></div>
+        <div class="planet-info">
+          Gravity: <span class="gravity-val" id="planet-gravity-label">9.8 m/s²</span>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><span>Select Planet</span></div>
+          <div class="select-wrap">
+            <select id="planet-select">
+              <option value="earth" data-g="9.80">Earth</option>
+              <option value="moon" data-g="1.62">Moon</option>
+              <option value="mars" data-g="3.72">Mars</option>
+              <option value="jupiter" data-g="24.8">Jupiter</option>
+              <option value="saturn" data-g="10.44">Saturn</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:8px">Settings</div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Level</span>
+            <span class="control-value" id="game-level-val">1</span>
+          </div>
+          <input type="range" id="game-level" min="1" max="10" step="1" value="1">
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Lives</span>
+            <span class="control-value" id="game-lives-val">3</span>
+          </div>
+          <input type="range" id="game-lives" min="1" max="10" step="1" value="3">
+        </div>
+
+        <div class="section-title" style="margin-top:12px">How to Play</div>
+        <div style="color:#8b8fa3; font-size:12px; line-height:1.5; padding:0 4px;">
+          <strong style="color:#f5a623">Click &amp; drag</strong> on the canvas to aim.<br>
+          <strong style="color:#3de87a">Release</strong> to fire the projectile.<br>
+          Destroy all targets to clear the level!
+        </div>
+
+        <button id="new-game-btn" class="add-btn"
+          style="margin-top:16px; background:linear-gradient(135deg,#f55a6e,#a78bfa);">↻ New Game</button>
+      </div>
+    </aside>
+
+    <!-- ── Canvas + Readout ── -->
+    <div class="canvas-area">
+      <div class="canvas-wrap">
+        <canvas id="projx-canvas"></canvas>
+      </div>
+      <div class="readout-bar" id="readout-bar">
+        <!-- populated by app.js -->
+      </div>
+    </div>
+
+  </div>
+
+  <script src="data.js"></script>
+  <script src="canvas.js"></script>
+  <script src="app.js"></script>
+
+</body>
+
+</html>

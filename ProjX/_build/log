@@ -1,11 +1,10 @@
-# C:\Users\chenn\AppData\Local\opam\4.14.1\bin\dune.exe exec bin/main.exe
+# dune exec projx
 # OCAMLPARAM: unset
 # Shared cache: enabled-except-user-rules
 # Shared cache location:
-# C:\Users\chenn\AppData\Local\Microsoft\Windows\INetCache\dune\db
-# Workspace root:
-# "C:\\Users\\chenn\\OneDrive\\Pictures\\OneDrive\\Desktop\\sw_project\\ProjX"
-# Auto-detected concurrency: 14
+# C:\Users\sanja\AppData\Local\Microsoft\Windows\INetCache\dune\db
+# Workspace root: "C:\\Users\\sanja\\SWPROJECT\\sw_project\\ProjX"
+# Auto-detected concurrency: 12
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
@@ -15,4 +14,4 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlc.opt.exe -config > C:\Users\chenn\AppData\Local\Temp\dune_e95f8c_output
+$ C:\Users\sanja\AppData\Local\opam\ocaml-variants\bin\ocamlc.opt.exe -config > C:\Users\sanja\AppData\Local\Temp\dune_c54035_output

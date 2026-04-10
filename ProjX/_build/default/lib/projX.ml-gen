@@ -3,11 +3,23 @@
 (** @canonical Projx.Ast *)
 module Ast = Projx__Ast
 
+(** @canonical Projx.Emitter *)
+module Emitter = Projx__Emitter
+
+(** @canonical Projx.Env *)
+module Env = Projx__Env
+
+(** @canonical Projx.Eval *)
+module Eval = Projx__Eval
+
 (** @canonical Projx.My_utils *)
 module My_utils = Projx__My_utils
 
 (** @canonical Projx.Parser *)
 module Parser = Projx__Parser
+
+(** @canonical Projx.Physics *)
+module Physics = Projx__Physics
 
 (** @canonical Projx.Pretty *)
 module Pretty = Projx__Pretty
