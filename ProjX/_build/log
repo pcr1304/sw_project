@@ -1,4 +1,4 @@
-# C:\Users\chenn\AppData\Local\opam\4.14.1\bin\dune.exe exec projx input/queries.px
+# C:\Users\chenn\AppData\Local\opam\4.14.1\bin\dune.exe test
 # OCAMLPARAM: unset
 # Shared cache: enabled-except-user-rules
 # Shared cache location:
@@ -15,4 +15,80 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlc.opt.exe -config > C:\Users\chenn\AppData\Local\Temp\dune_35d420_output
+$ C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlc.opt.exe -config > C:\Users\chenn\AppData\Local\Temp\dune_7387d4_output
+$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamldep.opt.exe -modules -impl test/test_tokenizer.ml) > _build/default/test/.test_tokenizer.eobjs/dune__exe__Test_tokenizer.impl.d
+$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamldep.opt.exe -modules -impl test/test_parser.ml) > _build/default/test/.test_tokenizer.eobjs/dune__exe__Test_parser.impl.d
+$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlopt.opt.exe -short-paths -keep-locs -warn-error +a -g -I test/.test_tokenizer.eobjs/byte -I test/.test_tokenizer.eobjs/native -I lib/.projx.objs/byte -I lib/.projx.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Dune__exe -o test/.test_tokenizer.eobjs/native/dune__exe__Test_tokenizer.cmx -c -impl test/test_tokenizer.ml)
+$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlopt.opt.exe -short-paths -keep-locs -warn-error +a -g -I test/.test_tokenizer.eobjs/byte -I test/.test_tokenizer.eobjs/native -I lib/.projx.objs/byte -I lib/.projx.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Dune__exe -o test/.test_tokenizer.eobjs/native/dune__exe__Test_parser.cmx -c -impl test/test_parser.ml)
+$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlopt.opt.exe -short-paths -keep-locs -warn-error +a -g -o test/test_tokenizer.exe lib/projx.cmxa test/.test_tokenizer.eobjs/native/dune__exe.cmx test/.test_tokenizer.eobjs/native/dune__exe__Test_tokenizer.cmx)
+$ (cd _build/default && C:\Users\chenn\AppData\Local\opam\4.14.1\bin\ocamlopt.opt.exe -short-paths -keep-locs -warn-error +a -g -o test/test_parser.exe lib/projx.cmxa test/.test_tokenizer.eobjs/native/dune__exe.cmx test/.test_tokenizer.eobjs/native/dune__exe__Test_parser.cmx)
+$ (cd _build/default/test && .\test_tokenizer.exe)
+>
+> ╔═══════════════════════════════════════╗
+> ║   Tokenizer Unit Tests                ║
+> ╚═══════════════════════════════════════╝
+>
+> ✓ Keywords
+> ✓ Identifiers
+> ✓ Numbers
+> ✓ Operators
+> ✓ Punctuation
+> ✓ String Literals
+> ✓ String Value 1
+> ✓ String Value 2
+> ✓ Comments
+> ✓ Air Resistance Keywords
+> ✓ Complex Expression
+> ✓ Projectile Block
+> ✓ Simulate Block
+> ✓ Fork Block
+> ✓ Game Block
+> ✓ Control Flow Keywords
+> ✓ Logical Operators
+> ✓ Whitespace Handling
+> ✓ Multiline Input
+> ✓ Negative Numbers
+> ✓ Dot Queries
+> ✓ Launch From
+>
+>  All tokenizer tests passed!
+>
+$ (cd _build/default/test && .\test_parser.exe)
+>
+> ╔═══════════════════════════════════════╗
+> ║   Parser Unit Tests                   ║
+> ╚═══════════════════════════════════════╝
+>
+> ✓ Simple Projectile
+> ✓ Projectile with Launch From
+> ✓ Projectile with Air Resistance
+> ✓ Missing Angle (Should Fail)
+> ✓ Missing Speed (Should Fail)
+> ✓ Simple Simulate
+> ✓ Simulate with Air Resistance
+> ✓ Simulate with Multiple Operations
+> ✓ Fork Block
+> ✓ Game Block
+> ✓ Let Statement
+> ✓ Set Statement
+> ✓ For Loop
+> ✓ While Loop
+> ✓ Repeat Loop
+> ✓ If Statement
+> ✓ If-Else Statement
+> ✓ Arithmetic Expressions
+> ✓ Negative Numbers
+> ✓ Parenthesized Expressions
+> ✓ Comparison Operators
+> ✓ Logical Operators
+> ✓ Dot Queries
+> ✓ Dot Queries with Gravity
+> ✓ Collision Detection
+> ✓ Bounce
+> ✓ Min Velocity
+> ✓ Check Statement
+> ✓ Complex Program
+> ✓ Variable in Projectile
+>
+>  All parser tests passed!
+>
