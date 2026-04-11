@@ -1,4 +1,4 @@
-(* ── ProjX v3 AST ── *)
+(* ── ProjX v3 AST with Air Resistance ── *)
 
 (* ── all mutually recursive types in one block ── *)
 type binop = Add | Sub | Mul | Div
@@ -29,33 +29,40 @@ and cond =
 
 (* ── simulate statements ── *)
 type sim_stmt =
-  | SGravity      of expr
-  | SPlot         of string
-  | SRange        of string
-  | SMaxRange     of string
-  | SMaxHeight    of string
-  | SMaxRect      of string
-  | SMinVel       of string * expr * expr          (* projectile, tower_x, tower_h *)
-  | SCollide      of string * string
-  | SCollisionVel of string * string
-  | SMinDist      of string * string
-  | SBounce       of string * expr * expr          (* projectile, times, restitution *)
-  | SCheck        of cond
+  | SGravity       of expr
+  | SAirResistance of bool
+  | SAirDensity    of expr
+  | SWindX         of expr
+  | SWindY         of expr
+  | SPlot          of string
+  | SRange         of string
+  | SMaxRange      of string
+  | SMaxHeight     of string
+  | SMaxRect       of string
+  | SMinVel        of string * expr * expr
+  | SCollide       of string * string
+  | SCollisionVel  of string * string
+  | SMinDist       of string * string
+  | SBounce        of string * expr * expr
+  | SCheck         of cond
 
 (* ── fork branch ── *)
 type branch = {
   label       : string;
   br_gravity  : expr;
-  br_bounce   : (expr * expr) option;              (* times, restitution *)
+  br_bounce   : (expr * expr) option;
 }
 
 (* ── top-level statements ── *)
 type stmt =
   | Projectile of {
-      name        : string;
-      angle       : expr;
-      speed       : expr;
-      launch_from : (expr * expr * expr) option;   (* x, y, t *)
+      name           : string;
+      angle          : expr;
+      speed          : expr;
+      launch_from    : (expr * expr * expr) option;
+      mass           : expr option;
+      drag_coeff     : expr option;
+      cross_section  : expr option;
     }
   | Simulate   of sim_stmt list
   | Fork       of string * branch list
@@ -66,7 +73,7 @@ type stmt =
     }
   | Let        of string * expr
   | Set        of string * expr
-  | For        of string * expr * expr * expr * stmt list   (* var, from, to, step, body *)
+  | For        of string * expr * expr * expr * stmt list
   | Repeat     of expr * stmt list
   | While      of cond * stmt list
   | IfElse     of cond * stmt list * stmt list option

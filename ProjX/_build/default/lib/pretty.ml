@@ -2,19 +2,15 @@
 
 open Ast
 
-(* ── indentation helper ── *)
 let ind n = String.make (n * 2) ' '
 
-(* ── binop ── *)
 let str_binop = function
   | Add -> "+" | Sub -> "-" | Mul -> "*" | Div -> "/"
 
-(* ── cmpop ── *)
 let str_cmpop = function
   | Eq  -> "==" | Neq -> "!=" | Lt -> "<"
   | Gt  -> ">"  | Leq -> "<=" | Geq -> ">="
 
-(* ── expression ── *)
 let rec print_expr = function
   | Num f   ->
       if Float.is_integer f then string_of_int (int_of_float f)
@@ -24,7 +20,6 @@ let rec print_expr = function
       "(" ^ print_expr l ^ " " ^ str_binop op ^ " " ^ print_expr r ^ ")"
   | DotQ dq -> print_dot_query dq
 
-(* ── dot query ── *)
 and print_dot_query = function
   | DotRange     (p, g)        -> "range."      ^ p ^ "(" ^ print_gopt g ^ ")"
   | DotMaxRange  (p, g)        -> "max_range."  ^ p ^ "(" ^ print_gopt g ^ ")"
@@ -44,7 +39,6 @@ and print_gopt = function
   | Some g -> print_expr g
   | None   -> ""
 
-(* ── condition ── *)
 let rec print_cond = function
   | Cmp (op, l, r)  ->
       print_expr l ^ " " ^ str_cmpop op ^ " " ^ print_expr r
@@ -53,41 +47,55 @@ let rec print_cond = function
   | Not c           -> "(not " ^ print_cond c ^ ")"
   | BoolDotQ dq     -> print_dot_query dq
 
-(* ── simulate statement ── *)
 let print_sim_stmt i s =
   match s with
-  | SGravity e          -> ind i ^ "gravity      " ^ print_expr e
-  | SPlot p             -> ind i ^ "plot         " ^ p
-  | SRange p            -> ind i ^ "range        " ^ p
-  | SMaxRange p         -> ind i ^ "max_range    " ^ p
-  | SMaxHeight p        -> ind i ^ "max_height   " ^ p
-  | SMaxRect p          -> ind i ^ "max_rectangle " ^ p
+  | SGravity e          -> ind i ^ "gravity         " ^ print_expr e
+  | SAirResistance b    -> ind i ^ "air_resistance  " ^ (if b then "true" else "false")
+  | SAirDensity e       -> ind i ^ "air_density     " ^ print_expr e
+  | SWindX e            -> ind i ^ "wind_x          " ^ print_expr e
+  | SWindY e            -> ind i ^ "wind_y          " ^ print_expr e
+  | SPlot p             -> ind i ^ "plot            " ^ p
+  | SRange p            -> ind i ^ "range           " ^ p
+  | SMaxRange p         -> ind i ^ "max_range       " ^ p
+  | SMaxHeight p        -> ind i ^ "max_height      " ^ p
+  | SMaxRect p          -> ind i ^ "max_rectangle   " ^ p
   | SMinVel (p, x, h)   ->
-      ind i ^ "min_vel      " ^ p ^ " tower ("
+      ind i ^ "min_vel         " ^ p ^ " tower ("
       ^ print_expr x ^ ", " ^ print_expr h ^ ")"
-  | SCollide (p1, p2)   -> ind i ^ "collide      " ^ p1 ^ " " ^ p2
-  | SCollisionVel (p1,p2) -> ind i ^ "collision_vel " ^ p1 ^ " " ^ p2
-  | SMinDist (p1, p2)   -> ind i ^ "min_dist     " ^ p1 ^ " " ^ p2
+  | SCollide (p1, p2)   -> ind i ^ "collide         " ^ p1 ^ " " ^ p2
+  | SCollisionVel (p1,p2) -> ind i ^ "collision_vel   " ^ p1 ^ " " ^ p2
+  | SMinDist (p1, p2)   -> ind i ^ "min_dist        " ^ p1 ^ " " ^ p2
   | SBounce (p, n, r)   ->
-      ind i ^ "bounce       " ^ p
+      ind i ^ "bounce          " ^ p
       ^ " times " ^ print_expr n
       ^ " restitution " ^ print_expr r
-  | SCheck c            -> ind i ^ "check        " ^ print_cond c
+  | SCheck c            -> ind i ^ "check           " ^ print_cond c
 
-(* ── top-level statement ── *)
 let rec print_stmt i s =
   match s with
-  | Projectile { name; angle; speed; launch_from } ->
+  | Projectile { name; angle; speed; launch_from; mass; drag_coeff; cross_section } ->
       let lf = match launch_from with
         | None -> ""
         | Some (x, y, t) ->
             "\n" ^ ind (i+1) ^ "launch_from ("
             ^ print_expr x ^ ", " ^ print_expr y ^ ", " ^ print_expr t ^ ")"
       in
+      let m = match mass with
+        | None -> ""
+        | Some e -> "\n" ^ ind (i+1) ^ "mass " ^ print_expr e
+      in
+      let d = match drag_coeff with
+        | None -> ""
+        | Some e -> "\n" ^ ind (i+1) ^ "drag_coefficient " ^ print_expr e
+      in
+      let cs = match cross_section with
+        | None -> ""
+        | Some e -> "\n" ^ ind (i+1) ^ "cross_section " ^ print_expr e
+      in
       ind i ^ "projectile " ^ name ^ " {\n"
       ^ ind (i+1) ^ "angle " ^ print_expr angle ^ "\n"
       ^ ind (i+1) ^ "speed " ^ print_expr speed
-      ^ lf ^ "\n"
+      ^ lf ^ m ^ d ^ cs ^ "\n"
       ^ ind i ^ "}"
 
   | Simulate ss ->
@@ -149,5 +157,4 @@ and print_branch i br =
 and print_stmts i stmts =
   String.concat "\n" (List.map (print_stmt i) stmts)
 
-(* ── entry point ── *)
 let print_program prog = print_stmts 0 prog

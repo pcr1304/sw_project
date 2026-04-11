@@ -1,4 +1,4 @@
-(* ── ProjX v3 semantic analyser ── *)
+(* ── ProjX v3 semantic analyser with Air Resistance ── *)
 
 open Ast
 
@@ -98,6 +98,7 @@ and check_sim_stmts env stmts =
   let gravity_count = ref 0 in
   let plot_count    = ref 0 in
   let plotted       = ref [] in
+  
   List.iter (fun s ->
     match s with
     | SGravity _ -> incr gravity_count
@@ -115,6 +116,20 @@ and check_sim_stmts env stmts =
   List.iter (fun s ->
     match s with
     | SGravity e ->
+        check_expr env e
+
+    | SAirResistance _ ->
+        ()
+
+    | SAirDensity e ->
+        check_expr env e;
+        (match e with
+         | Num rho ->
+             if rho <= 0.0 then
+               sem_err (Printf.sprintf "air_density must be positive, got %.4g" rho)
+         | _ -> ())
+
+    | SWindX e | SWindY e ->
         check_expr env e
 
     | SPlot p ->
@@ -157,7 +172,7 @@ and check_sim_stmts env stmts =
 and check_stmt env stmt =
   match stmt with
 
-  | Projectile { name; angle; speed; launch_from } ->
+  | Projectile { name; angle; speed; launch_from; mass; drag_coeff; cross_section } ->
       check_expr env angle;
       check_expr env speed;
       (match launch_from with
@@ -166,12 +181,49 @@ and check_stmt env stmt =
            check_expr env x;
            check_expr env y;
            check_expr env t);
+      
+      Option.iter (check_expr env) mass;
+      Option.iter (check_expr env) drag_coeff;
+      Option.iter (check_expr env) cross_section;
+      
       (match angle with
        | Num a ->
            if a < 0.0 || a > 90.0 then
              sem_err (Printf.sprintf
                "projectile '%s': angle %.4g is outside valid range [0, 90]" name a)
        | _ -> ());
+      
+      (match mass with
+       | Some (Num m) ->
+           if m <= 0.0 then
+             sem_err (Printf.sprintf "projectile '%s': mass must be positive" name)
+       | _ -> ());
+      
+      (match drag_coeff with
+       | Some (Num cd) ->
+           if cd < 0.0 then
+             sem_err (Printf.sprintf "projectile '%s': drag_coefficient cannot be negative" name)
+       | _ -> ());
+      
+      (match cross_section with
+       | Some (Num a) ->
+           if a <= 0.0 then
+             sem_err (Printf.sprintf "projectile '%s': cross_section must be positive" name)
+       | _ -> ());
+      
+      let has_mass = Option.is_some mass in
+      let has_drag = Option.is_some drag_coeff in
+      let has_cs   = Option.is_some cross_section in
+      
+      let specified_count = 
+        (if has_mass then 1 else 0) + 
+        (if has_drag then 1 else 0) + 
+        (if has_cs then 1 else 0) in
+      
+      if specified_count > 0 && specified_count < 3 then
+        Printf.printf "Info: projectile '%s' has partial drag properties (%d/3). Missing values will use defaults.\n" 
+          name specified_count;
+      
       declare_proj env name
 
   | Simulate ss ->

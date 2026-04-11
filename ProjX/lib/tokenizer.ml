@@ -1,3 +1,4 @@
+(* ── ProjX v3 Tokenizer with Air Resistance ── *)
 
 type token_kind =
   (* ── block keywords ── *)
@@ -9,8 +10,15 @@ type token_kind =
   | ANGLE
   | SPEED
   | LAUNCH_FROM
+  | MASS                    (* NEW *)
+  | DRAG_COEFFICIENT        (* NEW *)
+  | CROSS_SECTION          (* NEW *)
   (* ── simulate statements ── *)
   | GRAVITY
+  | AIR_RESISTANCE         (* NEW *)
+  | AIR_DENSITY            (* NEW *)
+  | WIND_X                 (* NEW *)
+  | WIND_Y                 (* NEW *)
   | PLOT
   | RANGE
   | MAX_RANGE
@@ -75,113 +83,129 @@ type token_kind =
   | END
  
 let str_tok = function
-  | PROJECTILE    -> "PROJECTILE"
-  | SIMULATE      -> "SIMULATE"
-  | FORK          -> "FORK"
-  | GAME          -> "GAME"
-  | ANGLE         -> "ANGLE"
-  | SPEED         -> "SPEED"
-  | LAUNCH_FROM   -> "LAUNCH_FROM"
-  | GRAVITY       -> "GRAVITY"
-  | PLOT          -> "PLOT"
-  | RANGE         -> "RANGE"
-  | MAX_RANGE     -> "MAX_RANGE"
-  | MAX_HEIGHT    -> "MAX_HEIGHT"
-  | MAX_RECTANGLE -> "MAX_RECTANGLE"
-  | MIN_VEL       -> "MIN_VEL"
-  | COLLIDE       -> "COLLIDE"
-  | COLLISION_VEL -> "COLLISION_VEL"
-  | MIN_DIST      -> "MIN_DIST"
-  | BOUNCE        -> "BOUNCE"
-  | TIMES         -> "TIMES"
-  | RESTITUTION   -> "RESTITUTION"
-  | CHECK         -> "CHECK"
-  | TOWER         -> "TOWER"
-  | BRANCH        -> "BRANCH"
-  | PLANET        -> "PLANET"
-  | LEVEL         -> "LEVEL"
-  | LIVES         -> "LIVES"
-  | LET           -> "LET"
-  | SET           -> "SET"
-  | FOR           -> "FOR"
-  | FROM          -> "FROM"
-  | TO            -> "TO"
-  | STEP          -> "STEP"
-  | REPEAT        -> "REPEAT"
-  | WHILE         -> "WHILE"
-  | IF            -> "IF"
-  | ELSE          -> "ELSE"
-  | AND           -> "AND"
-  | OR            -> "OR"
-  | NOT           -> "NOT"
-  | EQ            -> "EQ"
-  | NEQ           -> "NEQ"
-  | LESS          -> "LESS"
-  | MORE          -> "MORE"
-  | LEQ           -> "LEQ"
-  | GEQ           -> "GEQ"
-  | PLUS          -> "PLUS"
-  | MINUS         -> "MINUS"
-  | STAR          -> "STAR"
-  | SLASH         -> "SLASH"
-  | ASSIGN        -> "ASSIGN"
-  | LEFT_CURL     -> "LEFT_CURL"
-  | RIGHT_CURL    -> "RIGHT_CURL"
-  | LEFT_PAR      -> "LEFT_PAR"
-  | RIGHT_PAR     -> "RIGHT_PAR"
-  | DOT           -> "DOT"
-  | COMMA         -> "COMMA"
-  | IDF           -> "IDF"
-  | STR           -> "STR"
-  | INT           -> "INT"
-  | FLOAT         -> "FLOAT"
-  | END           -> "END"
+  | PROJECTILE       -> "PROJECTILE"
+  | SIMULATE         -> "SIMULATE"
+  | FORK             -> "FORK"
+  | GAME             -> "GAME"
+  | ANGLE            -> "ANGLE"
+  | SPEED            -> "SPEED"
+  | LAUNCH_FROM      -> "LAUNCH_FROM"
+  | MASS             -> "MASS"
+  | DRAG_COEFFICIENT -> "DRAG_COEFFICIENT"
+  | CROSS_SECTION    -> "CROSS_SECTION"
+  | GRAVITY          -> "GRAVITY"
+  | AIR_RESISTANCE   -> "AIR_RESISTANCE"
+  | AIR_DENSITY      -> "AIR_DENSITY"
+  | WIND_X           -> "WIND_X"
+  | WIND_Y           -> "WIND_Y"
+  | PLOT             -> "PLOT"
+  | RANGE            -> "RANGE"
+  | MAX_RANGE        -> "MAX_RANGE"
+  | MAX_HEIGHT       -> "MAX_HEIGHT"
+  | MAX_RECTANGLE    -> "MAX_RECTANGLE"
+  | MIN_VEL          -> "MIN_VEL"
+  | COLLIDE          -> "COLLIDE"
+  | COLLISION_VEL    -> "COLLISION_VEL"
+  | MIN_DIST         -> "MIN_DIST"
+  | BOUNCE           -> "BOUNCE"
+  | TIMES            -> "TIMES"
+  | RESTITUTION      -> "RESTITUTION"
+  | CHECK            -> "CHECK"
+  | TOWER            -> "TOWER"
+  | BRANCH           -> "BRANCH"
+  | PLANET           -> "PLANET"
+  | LEVEL            -> "LEVEL"
+  | LIVES            -> "LIVES"
+  | LET              -> "LET"
+  | SET              -> "SET"
+  | FOR              -> "FOR"
+  | FROM             -> "FROM"
+  | TO               -> "TO"
+  | STEP             -> "STEP"
+  | REPEAT           -> "REPEAT"
+  | WHILE            -> "WHILE"
+  | IF               -> "IF"
+  | ELSE             -> "ELSE"
+  | AND              -> "AND"
+  | OR               -> "OR"
+  | NOT              -> "NOT"
+  | EQ               -> "EQ"
+  | NEQ              -> "NEQ"
+  | LESS             -> "LESS"
+  | MORE             -> "MORE"
+  | LEQ              -> "LEQ"
+  | GEQ              -> "GEQ"
+  | PLUS             -> "PLUS"
+  | MINUS            -> "MINUS"
+  | STAR             -> "STAR"
+  | SLASH            -> "SLASH"
+  | ASSIGN           -> "ASSIGN"
+  | LEFT_CURL        -> "LEFT_CURL"
+  | RIGHT_CURL       -> "RIGHT_CURL"
+  | LEFT_PAR         -> "LEFT_PAR"
+  | RIGHT_PAR        -> "RIGHT_PAR"
+  | DOT              -> "DOT"
+  | COMMA            -> "COMMA"
+  | IDF              -> "IDF"
+  | STR              -> "STR"
+  | INT              -> "INT"
+  | FLOAT            -> "FLOAT"
+  | END              -> "END"
  
 type token = { kind : token_kind; text : string; lit_val : string }
  
 (* ── keyword table ── *)
 let key_id s =
   match s with
-  | "projectile"    -> (PROJECTILE,    "null")
-  | "simulate"      -> (SIMULATE,      "null")
-  | "fork"          -> (FORK,          "null")
-  | "game"          -> (GAME,          "null")
-  | "angle"         -> (ANGLE,         "null")
-  | "speed"         -> (SPEED,         "null")
-  | "launch_from"   -> (LAUNCH_FROM,   "null")
-  | "gravity"       -> (GRAVITY,       "null")
-  | "plot"          -> (PLOT,          "null")
-  | "range"         -> (RANGE,         "null")
-  | "max_range"     -> (MAX_RANGE,     "null")
-  | "max_height"    -> (MAX_HEIGHT,    "null")
-  | "max_rectangle" -> (MAX_RECTANGLE, "null")
-  | "min_vel"       -> (MIN_VEL,       "null")
-  | "collide"       -> (COLLIDE,       "null")
-  | "collision_vel" -> (COLLISION_VEL, "null")
-  | "min_dist"      -> (MIN_DIST,      "null")
-  | "bounce"        -> (BOUNCE,        "null")
-  | "times"         -> (TIMES,         "null")
-  | "restitution"   -> (RESTITUTION,   "null")
-  | "check"         -> (CHECK,         "null")
-  | "tower"         -> (TOWER,         "null")
-  | "branch"        -> (BRANCH,        "null")
-  | "planet"        -> (PLANET,        "null")
-  | "level"         -> (LEVEL,         "null")
-  | "lives"         -> (LIVES,         "null")
-  | "let"           -> (LET,           "null")
-  | "set"           -> (SET,           "null")
-  | "for"           -> (FOR,           "null")
-  | "from"          -> (FROM,          "null")
-  | "to"            -> (TO,            "null")
-  | "step"          -> (STEP,          "null")
-  | "repeat"        -> (REPEAT,        "null")
-  | "while"         -> (WHILE,         "null")
-  | "if"            -> (IF,            "null")
-  | "else"          -> (ELSE,          "null")
-  | "and"           -> (AND,           "null")
-  | "or"            -> (OR,            "null")
-  | "not"           -> (NOT,           "null")
-  | _               -> (IDF,           "null")
+  | "projectile"       -> (PROJECTILE,       "null")
+  | "simulate"         -> (SIMULATE,         "null")
+  | "fork"             -> (FORK,             "null")
+  | "game"             -> (GAME,             "null")
+  | "angle"            -> (ANGLE,            "null")
+  | "speed"            -> (SPEED,            "null")
+  | "launch_from"      -> (LAUNCH_FROM,      "null")
+  | "mass"             -> (MASS,             "null")
+  | "drag_coefficient" -> (DRAG_COEFFICIENT, "null")
+  | "cross_section"    -> (CROSS_SECTION,    "null")
+  | "gravity"          -> (GRAVITY,          "null")
+  | "air_resistance"   -> (AIR_RESISTANCE,   "null")
+  | "air_density"      -> (AIR_DENSITY,      "null")
+  | "wind_x"           -> (WIND_X,           "null")
+  | "wind_y"           -> (WIND_Y,           "null")
+  | "plot"             -> (PLOT,             "null")
+  | "range"            -> (RANGE,            "null")
+  | "max_range"        -> (MAX_RANGE,        "null")
+  | "max_height"       -> (MAX_HEIGHT,       "null")
+  | "max_rectangle"    -> (MAX_RECTANGLE,    "null")
+  | "min_vel"          -> (MIN_VEL,          "null")
+  | "collide"          -> (COLLIDE,          "null")
+  | "collision_vel"    -> (COLLISION_VEL,    "null")
+  | "min_dist"         -> (MIN_DIST,         "null")
+  | "bounce"           -> (BOUNCE,           "null")
+  | "times"            -> (TIMES,            "null")
+  | "restitution"      -> (RESTITUTION,      "null")
+  | "check"            -> (CHECK,            "null")
+  | "tower"            -> (TOWER,            "null")
+  | "branch"           -> (BRANCH,           "null")
+  | "planet"           -> (PLANET,           "null")
+  | "level"            -> (LEVEL,            "null")
+  | "lives"            -> (LIVES,            "null")
+  | "let"              -> (LET,              "null")
+  | "set"              -> (SET,              "null")
+  | "for"              -> (FOR,              "null")
+  | "from"             -> (FROM,             "null")
+  | "to"               -> (TO,               "null")
+  | "step"             -> (STEP,             "null")
+  | "repeat"           -> (REPEAT,           "null")
+  | "while"            -> (WHILE,            "null")
+  | "if"               -> (IF,               "null")
+  | "else"             -> (ELSE,             "null")
+  | "and"              -> (AND,              "null")
+  | "or"               -> (OR,               "null")
+  | "not"              -> (NOT,              "null")
+  | "true"             -> (IDF,              "true")
+  | "false"            -> (IDF,              "false")
+  | _                  -> (IDF,              "null")
  
 (* ── character helpers ── *)
 let is_digit  d = d >= '0' && d <= '9'

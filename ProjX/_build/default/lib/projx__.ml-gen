@@ -6,8 +6,14 @@ module Ast = Projx__Ast
 (** @canonical Projx.Checker *)
 module Checker = Projx__Checker
 
+(** @canonical Projx.Env *)
+module Env = Projx__Env
+
 (** @canonical Projx.Error *)
 module Error = Projx__Error
+
+(** @canonical Projx.Eval *)
+module Eval = Projx__Eval
 
 (** @canonical Projx.My_utils *)
 module My_utils = Projx__My_utils
@@ -15,8 +21,14 @@ module My_utils = Projx__My_utils
 (** @canonical Projx.Parser *)
 module Parser = Projx__Parser
 
+(** @canonical Projx.Physics *)
+module Physics = Projx__Physics
+
 (** @canonical Projx.Pretty *)
 module Pretty = Projx__Pretty
 
 (** @canonical Projx.Tokenizer *)
 module Tokenizer = Projx__Tokenizer
+
+module Projx__ = struct end
+[@@deprecated "this module is shadowed"]

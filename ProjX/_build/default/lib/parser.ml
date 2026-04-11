@@ -1,4 +1,4 @@
-(* ── ProjX v3 parser ── *)
+(* ── ProjX v3 parser with Air Resistance ── *)
 
 open Tokenizer
 open Ast
@@ -43,10 +43,6 @@ let expect_str tokens =
    Expression parser  (+ - * /)
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *)
 
-(* expr    = term  { ('+' | '-') term }
-   term    = factor { ('*' | '/') factor }
-   factor  = NUM | FLOAT | IDF | dot_query | '(' expr ')' *)
-
 let rec parse_expr tokens =
   let (lhs, tokens) = parse_term tokens in
   parse_expr_rest lhs tokens
@@ -78,11 +74,35 @@ and parse_term_rest lhs tokens =
       let (rhs, tokens) = parse_factor tokens in
       parse_term_rest (Binop (Div, lhs, rhs)) tokens
   | _ -> (lhs, tokens)
- and parse_factor tokens =
+
+and parse_factor tokens =
   match (peek tokens).kind with
   | INT | FLOAT ->
       let tok = peek tokens in
       (Num (float_of_string tok.lit_val), advance tokens)
+      
+  | MINUS ->
+      (* Handle unary minus: -5, -3.14, etc. *)
+      let tokens = advance tokens in
+      (match (peek tokens).kind with
+       | INT | FLOAT ->
+           let tok = peek tokens in
+           let value = -. (float_of_string tok.lit_val) in
+           (Num value, advance tokens)
+       | LEFT_PAR ->
+           let tokens = advance tokens in
+           let (e, tokens) = parse_expr tokens in
+           let tokens = expect RIGHT_PAR tokens in
+           (Binop (Sub, Num 0.0, e), tokens)
+       | _ ->
+           let (e, tokens) = parse_factor tokens in
+           (Binop (Sub, Num 0.0, e), tokens))
+      
+  | PLUS ->
+      (* Handle unary plus (optional) *)
+      let tokens = advance tokens in
+      parse_factor tokens
+      
   | IDF
   | RANGE | MAX_RANGE | MAX_HEIGHT | MAX_RECTANGLE | MIN_VEL | COLLIDE | MIN_DIST ->
       let tok   = peek tokens in
@@ -91,21 +111,20 @@ and parse_term_rest lhs tokens =
         parse_dot_query_as_expr tokens
       else
         (Var tok.text, rest1)
+        
   | LEFT_PAR ->
       let tokens = advance tokens in
       let (e, tokens) = parse_expr tokens in
       let tokens = expect RIGHT_PAR tokens in
       (e, tokens)
-  | tok ->
-      failwith (Printf.sprintf "Parse Error: unexpected token '%s' in expression" (str_tok tok))
+      
+  | _ ->
+      let tok = peek tokens in
+      failwith (Printf.sprintf "Parse Error: unexpected token '%s' in expression" tok.text)
+
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Dot-query parser
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *)
-
-(*  range.p()          max_range.p(g)
-    min_vel.p(x,h)     min_vel.p(x,h,g)
-    collide.(p1,p2)    collide.(p1,p2,g)
-    min_dist.(p1,p2)   min_dist.(p1,p2,g)          *)
 
 and parse_dot_query_as_expr tokens =
   let (dq, tokens) = parse_dot_query tokens in
@@ -114,12 +133,11 @@ and parse_dot_query_as_expr tokens =
 and parse_dot_query tokens =
   let tok    = peek tokens in
   let name   = tok.text in
-  let tokens = advance tokens in          (* consume query name *)
-  let tokens = expect DOT tokens in       (* consume '.' *)
+  let tokens = advance tokens in
+  let tokens = expect DOT tokens in
 
   match name with
   | "range" | "max_range" | "max_height" | "max_rectangle" ->
-      (* range.p()  /  range.p(g) *)
       let (proj, tokens) = expect_idf tokens in
       let tokens         = expect LEFT_PAR tokens in
       let (g_opt, tokens) =
@@ -137,7 +155,6 @@ and parse_dot_query tokens =
       (dq, tokens)
 
   | "min_vel" ->
-      (* min_vel.p(x, h)  /  min_vel.p(x, h, g) *)
       let (proj, tokens) = expect_idf tokens in
       let tokens         = expect LEFT_PAR tokens in
       let (x, tokens)    = parse_expr tokens in
@@ -154,7 +171,6 @@ and parse_dot_query tokens =
       (DotMinVel (proj, x, h, g_opt), tokens)
 
   | "collide" | "min_dist" ->
-      (* collide.(p1,p2)  /  collide.(p1,p2,g) *)
       let tokens          = expect LEFT_PAR tokens in
       let (p1, tokens)    = expect_idf tokens in
       let tokens          = expect COMMA tokens in
@@ -179,9 +195,6 @@ and parse_dot_query tokens =
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Condition parser
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *)
-
-(* cond = cond_atom { ('and'|'or') cond_atom }
-   cond_atom = 'not' cond_atom | expr cmpop expr | dot_query (bool) | '(' cond ')' *)
 
 let rec parse_cond tokens =
   let (lhs, tokens) = parse_cond_atom tokens in
@@ -210,7 +223,6 @@ and parse_cond_atom tokens =
        let rest = advance tokens in
        (peek rest).kind = DOT &&
        (name = "collide" || name = "min_dist")) ->
-      (* boolean dot query *)
       let (dq, tokens) = parse_dot_query tokens in
       (BoolDotQ dq, tokens)
   | _ ->
@@ -227,8 +239,9 @@ and parse_cmpop tokens =
   | MORE -> (Gt,  advance tokens)
   | LEQ  -> (Leq, advance tokens)
   | GEQ  -> (Geq, advance tokens)
-  | tok  ->
-      failwith (Printf.sprintf "Parse Error: expected comparison operator but got '%s'" (str_tok tok))
+  | _    ->
+      let tok = peek tokens in
+      failwith (Printf.sprintf "Parse Error: expected comparison operator but got '%s'" tok.text)
 
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Simulate block
@@ -246,12 +259,47 @@ let rec parse_sim_stmts tokens =
 and parse_sim_stmt tokens =
   match (peek tokens).kind with
   | GRAVITY ->
-      let tokens    = advance tokens in
+      let tokens      = advance tokens in
       let (e, tokens) = parse_expr tokens in
       (SGravity e, tokens)
 
+  | AIR_RESISTANCE ->
+      let tokens = advance tokens in
+      let enabled = match (peek tokens).kind with
+        | IDF ->
+            let name = (peek tokens).text in
+            let tokens = advance tokens in
+            (match name with
+             | "true"  -> (true, tokens)
+             | "false" -> (false, tokens)
+             | _ -> failwith "Parse Error: air_resistance expects true/false")
+        | INT | FLOAT ->
+            let tok = peek tokens in
+            let tokens = advance tokens in
+            let v = float_of_string tok.lit_val in
+            (v > 0.0, tokens)
+        | _ -> failwith "Parse Error: air_resistance expects boolean or number"
+      in
+      let (b, tokens) = enabled in
+      (SAirResistance b, tokens)
+
+  | AIR_DENSITY ->
+      let tokens      = advance tokens in
+      let (e, tokens) = parse_expr tokens in
+      (SAirDensity e, tokens)
+
+  | WIND_X ->
+      let tokens      = advance tokens in
+      let (e, tokens) = parse_expr tokens in
+      (SWindX e, tokens)
+
+  | WIND_Y ->
+      let tokens      = advance tokens in
+      let (e, tokens) = parse_expr tokens in
+      (SWindY e, tokens)
+
   | PLOT ->
-      let tokens       = advance tokens in
+      let tokens         = advance tokens in
       let (name, tokens) = expect_idf tokens in
       (SPlot name, tokens)
 
@@ -318,8 +366,9 @@ and parse_sim_stmt tokens =
       let (c, tokens)  = parse_cond tokens in
       (SCheck c, tokens)
 
-  | tok ->
-      failwith (Printf.sprintf "Parse Error: unexpected token '%s' in simulate block" (str_tok tok))
+  | _ ->
+      let tok = peek tokens in
+      failwith (Printf.sprintf "Parse Error: unexpected token '%s' in simulate block" tok.text)
 
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Projectile block
@@ -329,8 +378,8 @@ let parse_projectile tokens =
   let tokens           = expect PROJECTILE tokens in
   let (name, tokens)   = expect_idf tokens in
   let tokens           = expect LEFT_CURL tokens in
-  (* parse angle / speed / launch_from in any order *)
-  let rec loop tokens angle speed lf =
+  
+  let rec loop tokens angle speed lf mass drag cs =
     match (peek tokens).kind with
     | RIGHT_CURL ->
         let tokens = advance tokens in
@@ -342,15 +391,26 @@ let parse_projectile tokens =
           | Some e -> e
           | None   -> failwith (Printf.sprintf "Parse Error: projectile '%s' missing speed" name)
         in
-        (Projectile { name; angle; speed; launch_from = lf }, tokens)
+        (Projectile { 
+          name; 
+          angle; 
+          speed; 
+          launch_from = lf;
+          mass;
+          drag_coeff = drag;
+          cross_section = cs;
+        }, tokens)
+        
     | ANGLE ->
-        let tokens    = advance tokens in
+        let tokens      = advance tokens in
         let (e, tokens) = parse_expr tokens in
-        loop tokens (Some e) speed lf
+        loop tokens (Some e) speed lf mass drag cs
+        
     | SPEED ->
-        let tokens    = advance tokens in
+        let tokens      = advance tokens in
         let (e, tokens) = parse_expr tokens in
-        loop tokens angle (Some e) lf
+        loop tokens angle (Some e) lf mass drag cs
+        
     | LAUNCH_FROM ->
         let tokens      = advance tokens in
         let tokens      = expect LEFT_PAR tokens in
@@ -360,11 +420,28 @@ let parse_projectile tokens =
         let tokens      = expect COMMA tokens in
         let (t, tokens) = parse_expr tokens in
         let tokens      = expect RIGHT_PAR tokens in
-        loop tokens angle speed (Some (x, y, t))
-    | tok ->
-        failwith (Printf.sprintf "Parse Error: unexpected '%s' in projectile block" (str_tok tok))
+        loop tokens angle speed (Some (x, y, t)) mass drag cs
+        
+    | MASS ->
+        let tokens      = advance tokens in
+        let (e, tokens) = parse_expr tokens in
+        loop tokens angle speed lf (Some e) drag cs
+        
+    | DRAG_COEFFICIENT ->
+        let tokens      = advance tokens in
+        let (e, tokens) = parse_expr tokens in
+        loop tokens angle speed lf mass (Some e) cs
+        
+    | CROSS_SECTION ->
+        let tokens      = advance tokens in
+        let (e, tokens) = parse_expr tokens in
+        loop tokens angle speed lf mass drag (Some e)
+        
+    | _ ->
+        let tok = peek tokens in
+        failwith (Printf.sprintf "Parse Error: unexpected '%s' in projectile block" tok.text)
   in
-  loop tokens None None None
+  loop tokens None None None None None None
 
 (* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Fork block
@@ -382,7 +459,6 @@ let rec parse_branches tokens =
       let (bounce_opt, tokens) =
         if (peek tokens).kind = BOUNCE then
           let tokens      = advance tokens in
-          (* bounce inside fork has no projectile name — just times / restitution *)
           let tokens      = expect TIMES tokens in
           let (n, tokens) = parse_expr tokens in
           let tokens      = expect RESTITUTION tokens in
@@ -394,8 +470,9 @@ let rec parse_branches tokens =
       let br = { label; br_gravity = g; br_bounce = bounce_opt } in
       let (rest, tokens)  = parse_branches tokens in
       (br :: rest, tokens)
-  | tok ->
-      failwith (Printf.sprintf "Parse Error: expected branch but got '%s'" (str_tok tok))
+  | _ ->
+      let tok = peek tokens in
+      failwith (Printf.sprintf "Parse Error: expected branch but got '%s'" tok.text)
 
 let parse_fork tokens =
   let tokens         = expect FORK tokens in
@@ -501,8 +578,9 @@ let rec parse_stmt tokens =
       in
       (IfElse (c, tbody, fbody_opt), tokens)
 
-  | tok ->
-      failwith (Printf.sprintf "Parse Error: unexpected token '%s' at top level" (str_tok tok))
+  | _ ->
+      let tok = peek tokens in
+      failwith (Printf.sprintf "Parse Error: unexpected token '%s' at top level" tok.text)
 
 and parse_stmts tokens =
   match (peek tokens).kind with
@@ -520,5 +598,7 @@ let parse tokens =
   let (program, tokens) = parse_stmts tokens in
   (match (peek tokens).kind with
    | END -> ()
-   | tok -> failwith (Printf.sprintf "Parse Error: unexpected token '%s' after end of program" (str_tok tok)));
+   | _ ->
+       let tok = peek tokens in
+       failwith (Printf.sprintf "Parse Error: unexpected token '%s' after end of program" tok.text));
   program
