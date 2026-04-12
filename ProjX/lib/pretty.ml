@@ -47,8 +47,33 @@ let rec print_cond = function
   | Not c           -> "(not " ^ print_cond c ^ ")"
   | BoolDotQ dq     -> print_dot_query dq
 
-let print_sim_stmt i s =
+let rec print_sim_stmt i s =
   match s with
+  (* ADD THIS CASE: *)
+  | SProjectile { name; angle; speed; launch_from; mass; drag_coeff; cross_section } ->
+      let lf = match launch_from with
+        | None -> ""
+        | Some (x, y, t) ->
+            "\n" ^ ind (i+1) ^ "launch_from ("
+            ^ print_expr x ^ ", " ^ print_expr y ^ ", " ^ print_expr t ^ ")"
+      in
+      let m = match mass with
+        | None -> ""
+        | Some e -> "\n" ^ ind (i+1) ^ "mass " ^ print_expr e
+      in
+      let d = match drag_coeff with
+        | None -> ""
+        | Some e -> "\n" ^ ind (i+1) ^ "drag_coefficient " ^ print_expr e
+      in
+      let cs = match cross_section with
+        | None -> ""
+        | Some e -> "\n" ^ ind (i+1) ^ "cross_section " ^ print_expr e
+      in
+      ind i ^ "projectile " ^ name ^ " {\n"
+      ^ ind (i+1) ^ "angle " ^ print_expr angle ^ "\n"
+      ^ ind (i+1) ^ "speed " ^ print_expr speed
+      ^ lf ^ m ^ d ^ cs ^ "\n"
+      ^ ind i ^ "}"
   | SGravity e          -> ind i ^ "gravity         " ^ print_expr e
   | SAirResistance b    -> ind i ^ "air_resistance  " ^ (if b then "true" else "false")
   | SAirDensity e       -> ind i ^ "air_density     " ^ print_expr e
@@ -70,6 +95,24 @@ let print_sim_stmt i s =
       ^ " times " ^ print_expr n
       ^ " restitution " ^ print_expr r
   | SCheck c            -> ind i ^ "check           " ^ print_cond c
+  | SFor (var, a, b, s, body) ->
+      ind i ^ "for " ^ var
+      ^ " from " ^ print_expr a
+      ^ " to "   ^ print_expr b
+      ^ " step "  ^ print_expr s ^ " {\n"
+      ^ print_sim_stmts (i+1) body ^ "\n"
+      ^ ind i ^ "}"
+  | SRepeat (n, body) ->
+      ind i ^ "repeat " ^ print_expr n ^ " {\n"
+      ^ print_sim_stmts (i+1) body ^ "\n"
+      ^ ind i ^ "}"
+  | SWhile (c, body) ->
+      ind i ^ "while " ^ print_cond c ^ " {\n"
+      ^ print_sim_stmts (i+1) body ^ "\n"
+      ^ ind i ^ "}"
+
+and print_sim_stmts i stmts =
+  String.concat "\n" (List.map (print_sim_stmt i) stmts)
 
 let rec print_stmt i s =
   match s with
@@ -100,7 +143,7 @@ let rec print_stmt i s =
 
   | Simulate ss ->
       ind i ^ "simulate {\n"
-      ^ String.concat "\n" (List.map (print_sim_stmt (i+1)) ss) ^ "\n"
+      ^ print_sim_stmts (i+1) ss ^ "\n"
       ^ ind i ^ "}"
 
   | Fork (name, branches) ->
@@ -146,12 +189,7 @@ let rec print_stmt i s =
 
 and print_branch i br =
   ind i ^ "branch \"" ^ br.label ^ "\" {\n"
-  ^ ind (i+1) ^ "gravity " ^ print_expr br.br_gravity ^ "\n"
-  ^ (match br.br_bounce with
-     | None -> ""
-     | Some (n, r) ->
-         ind (i+1) ^ "bounce times " ^ print_expr n
-         ^ " restitution " ^ print_expr r ^ "\n")
+  ^ print_sim_stmts (i+1) br.br_stmts ^ "\n"
   ^ ind i ^ "}"
 
 and print_stmts i stmts =

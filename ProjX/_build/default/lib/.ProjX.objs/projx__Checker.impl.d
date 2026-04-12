@@ -1,1 +1,1 @@
-lib/checker.ml: Ast List Option Printf String
+lib/checker.ml: Ast List Option Printf

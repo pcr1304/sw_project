@@ -1,3 +1,4 @@
 (library
  (name projx)
- (modules projx tokenizer ast parser checker env physics eval pretty my_utils error))
+ (modules projx tokenizer ast parser checker env physics eval pretty my_utils error json_emit)
+ (libraries yojson))

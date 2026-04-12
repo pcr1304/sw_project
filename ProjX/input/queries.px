@@ -1,437 +1,61 @@
-// ═══════════════════════════════════════════════════════════════
-// ProjX v3 - Complete Test Suite with Air Resistance & Game Mode
-// ═══════════════════════════════════════════════════════════════
-
-// ───────────────────────────────────────────────────────────────
-// Section 1: Basic Projectiles (No Drag)
-// ───────────────────────────────────────────────────────────────
-
 let ang = 45
 
-projectile cannon_ball {
-  angle ang
-  speed 50
-  launch_from (0, 0, 0)
+game {
+  planet jupiter 
+  level 3
+  lives 10
 }
-
-projectile arrow {
-  angle 30
-  speed 40
-  launch_from (0, 1.5, 0)
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 2: Projectiles with Air Resistance
-// ───────────────────────────────────────────────────────────────
-
-// Baseball
-projectile baseball {
-  angle 45
-  speed 30
-  mass 0.145
-  drag_coefficient 0.3
-  cross_section 0.0042
-  launch_from (0, 1, 0)
-}
-
-// Bullet (high speed, low drag)
-projectile bullet {
-  angle 45
-  speed 100
-  mass 0.01
-  drag_coefficient 0.295
-  cross_section 0.0002
-  launch_from (0, 0, 0)
-}
-
-// Feather (light, high drag)
-projectile feather {
-  angle 45
-  speed 20
-  mass 0.001
-  drag_coefficient 1.5
-  cross_section 0.005
-  launch_from (0, 0, 0)
-}
-
-// Tennis ball (uses default drag if not specified)
-projectile tennis_ball {
-  angle 40
-  speed 25
-  mass 0.058
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 3: Simulate Without Air Resistance
-// ───────────────────────────────────────────────────────────────
-
-simulate {
-  gravity 9.8
-  plot cannon_ball
-  plot arrow
-  range cannon_ball
-  max_height cannon_ball
-  max_range cannon_ball
-  check max_height.cannon_ball() > 30
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 4: Simulate With Air Resistance (No Wind)
-// ───────────────────────────────────────────────────────────────
-
-simulate {
-  gravity 9.8
-  air_resistance true
-  air_density 1.225
-  wind_x 0
-  wind_y 0
-  plot baseball
-  plot bullet
-  plot feather
-  range baseball
-  range bullet
-  range feather
-  max_height baseball
-  max_height bullet
-  max_height feather
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 5: Simulate With Headwind
-// ───────────────────────────────────────────────────────────────
-
-simulate {
-  gravity 9.8
-  air_resistance true
-  air_density 1.225
-  wind_x -5.0
-  wind_y 0
-  plot bullet
-  range bullet
-  max_height bullet
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 6: Simulate With Tailwind
-// ───────────────────────────────────────────────────────────────
-
-simulate {
-  gravity 9.8
-  air_resistance true
-  air_density 1.225
-  wind_x 5.0
-  wind_y 0
-  plot bullet
-  range bullet
-  max_height bullet
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 7: Collision Detection
-// ───────────────────────────────────────────────────────────────
 
 projectile p1 {
-  angle 45
+  angle ang
   speed 30
   launch_from (0, 0, 0)
 }
 
 projectile p2 {
-  angle 50
-  speed 28
-  launch_from (10, 0, 0)
+  angle 60
+  speed 25
 }
 
 simulate {
   gravity 9.8
   plot p1
   plot p2
+  range p1
+  max_height p1
   collide p1 p2
-  collision_vel p1 p2
-  min_dist p1 p2
+  bounce p1 times 3 restitution 0.7
+  check max_height.p1() > 20
 }
 
-// ───────────────────────────────────────────────────────────────
-// Section 8: Bounce Simulation
-// ───────────────────────────────────────────────────────────────
-
-projectile bouncy_ball {
-  angle 30
-  speed 25
-  launch_from (0, 0, 0)
-}
-
-simulate {
-  gravity 9.8
-  plot bouncy_ball
-  bounce bouncy_ball times 3 restitution 0.7
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 9: Fork - Different Planets
-// ───────────────────────────────────────────────────────────────
-
-projectile rocket {
-  angle 45
-  speed 50
-}
-
-fork rocket {
+fork p1 {
   branch "Earth" {
     gravity 9.8
-    bounce times 2 restitution 0.6
+    bounce p1 times 2 restitution 0.7
   }
-  
-  branch "Moon" {
-    gravity 1.62
-    bounce times 4 restitution 0.8
-  }
-  
   branch "Mars" {
     gravity 3.72
-    bounce times 3 restitution 0.7
-  }
-  
-  branch "Jupiter" {
-    gravity 24.8
   }
 }
 
-// ───────────────────────────────────────────────────────────────
-// Section 10: Tower Clearing (Min Velocity)
-// ───────────────────────────────────────────────────────────────
-
-projectile catapult {
-  angle 60
-  speed 35
+for ang from 20 to 70 step 10 {
+  projectile p {
+    angle 30
+    speed 40
+  }
+  let r = max_range.p()
+  if r > 150 {
+    simulate {
+      gravity 9.8
+      plot p
+      max_height p
+      range p
+    }
+  }
 }
-
-simulate {
-  gravity 9.8
-  plot catapult
-  min_vel catapult tower (50, 20)
-  range catapult
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 11: Max Rectangle
-// ───────────────────────────────────────────────────────────────
-
-projectile mortar {
-  angle 45
-  speed 40
-}
-
-simulate {
-  gravity 9.8
-  plot mortar
-  max_rectangle mortar
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 12: Game Mode - Earth Level
-// ───────────────────────────────────────────────────────────────
-
-game {
-  planet earth
-  level 1
-  lives 3
-}
-
-projectile game_shot1 {
-  angle 35
-  speed 45
-  launch_from (0, 0, 0)
-}
-
-simulate {
-  gravity 9.8
-  plot game_shot1
-  range game_shot1
-  max_height game_shot1
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 13: Game Mode - Moon Level
-// ───────────────────────────────────────────────────────────────
-
-game {
-  planet moon
-  level 2
-  lives 5
-}
-
-projectile moon_shot {
-  angle 45
-  speed 30
-  launch_from (0, 0, 0)
-}
-
-simulate {
-  gravity 1.62
-  plot moon_shot
-  range moon_shot
-  max_height moon_shot
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 14: Game Mode - Mars with Air Resistance
-// ───────────────────────────────────────────────────────────────
 
 game {
   planet mars
   level 3
-  lives 4
+  lives 5
 }
-
-projectile mars_probe {
-  angle 40
-  speed 50
-  mass 0.5
-  drag_coefficient 0.47
-  cross_section 0.01
-  launch_from (0, 0, 0)
-}
-
-simulate {
-  gravity 3.72
-  air_resistance true
-  air_density 0.02   // Mars has thin atmosphere
-  wind_x 2.0         // Martian wind
-  wind_y 0
-  plot mars_probe
-  range mars_probe
-  max_height mars_probe
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 15: Control Flow - For Loop with Optimization
-// ───────────────────────────────────────────────────────────────
-
-for ang from 20 to 70 step 10 {
-  projectile optimized {
-    angle ang
-    speed 40
-  }
-  
-  let r = range.optimized()
-  
-  if r > 140 {
-    simulate {
-      gravity 9.8
-      plot optimized
-      range optimized
-      max_height optimized
-    }
-  }
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 16: Repeat Loop
-// ───────────────────────────────────────────────────────────────
-
-let counter = 0
-
-repeat 3 {
-  projectile repeated_shot {
-    angle 45
-    speed 30 + counter * 5
-  }
-  
-  simulate {
-    gravity 9.8
-    plot repeated_shot
-    range repeated_shot
-  }
-  
-  set counter = counter + 1
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 17: While Loop
-// ───────────────────────────────────────────────────────────────
-
-let velocity = 20
-
-while velocity < 40 {
-  projectile incremental {
-    angle 45
-    speed velocity
-  }
-  
-  let distance = range.incremental()
-  
-  if distance > 30 {
-    simulate {
-      gravity 9.8
-      plot incremental
-      range incremental
-    }
-  }
-  
-  set velocity = velocity + 5
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 18: Advanced Game - Jupiter Challenge
-// ───────────────────────────────────────────────────────────────
-
-game {
-  planet jupiter
-  level 10
-  lives 1
-}
-
-projectile jupiter_probe {
-  angle 60
-  speed 200
-  mass 100
-  drag_coefficient 0.5
-  cross_section 2.0
-  launch_from (0, 0, 0)
-}
-
-simulate {
-  gravity 24.8
-  air_resistance true
-  air_density 10.0   // Jupiter's thick atmosphere
-  wind_x -20.0       // Strong winds
-  wind_y 5.0
-  plot jupiter_probe
-  range jupiter_probe
-  max_height jupiter_probe
-}
-
-// ───────────────────────────────────────────────────────────────
-// Section 19: Final Game - Sun (Extreme Challenge)
-// ───────────────────────────────────────────────────────────────
-
-game {
-  planet sun
-  level 99
-  lives 1
-}
-
-projectile solar_escape {
-  angle 85
-  speed 1000
-  mass 1000
-  drag_coefficient 0.1
-  cross_section 5.0
-}
-
-simulate {
-  gravity 274.0
-  air_resistance true
-  air_density 0.0001  // Near vacuum
-  wind_x 0
-  wind_y 0
-  plot solar_escape
-  range solar_escape
-  max_height solar_escape
-  check max_height.solar_escape() > 100
-}
-
-// ═══════════════════════════════════════════════════════════════
-// END OF TEST FILE
-// ═══════════════════════════════════════════════════════════════

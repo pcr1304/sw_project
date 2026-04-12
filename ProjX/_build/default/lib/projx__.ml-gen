@@ -15,6 +15,9 @@ module Error = Projx__Error
 (** @canonical Projx.Eval *)
 module Eval = Projx__Eval
 
+(** @canonical Projx.Json_emit *)
+module Json_emit = Projx__Json_emit
+
 (** @canonical Projx.My_utils *)
 module My_utils = Projx__My_utils
 
