@@ -188,7 +188,6 @@ let simulate_to_json env stmts sim_number =
   let wind_x = ref 0.0 in
   let wind_y = ref 0.0 in
   let wind_z = ref 0.0 in
-  (* NEW *)
 
   List.iter
     (function
@@ -197,7 +196,7 @@ let simulate_to_json env stmts sim_number =
       | SAirDensity e -> air_density := je_expr env e
       | SWindX e -> wind_x := je_expr env e
       | SWindY e -> wind_y := je_expr env e
-      | SWindZ e -> wind_z := je_expr env e (* NEW *)
+      | SWindZ e -> wind_z := je_expr env e
       | _ -> ())
     stmts;
 
@@ -210,7 +209,6 @@ let simulate_to_json env stmts sim_number =
       wind_x = !wind_x;
       wind_y = !wind_y;
       wind_z = !wind_z;
-      (* NEW *)
     }
   in
 
@@ -219,6 +217,14 @@ let simulate_to_json env stmts sim_number =
   let bounces = ref [] in
   let collisions = ref [] in
   let queries = ref [] in
+
+  (* ── unique ID counter for plot statements ──────────────────
+     Each `plot p` call inside a loop would otherwise emit the
+     same id ("p") for every iteration, causing all trajectories
+     to share one colour and overwrite each other in the renderer.
+     We suffix with a monotonically increasing index so the JS
+     sees distinct ids: p_1, p_2, … p_9 for a 9-iteration loop. *)
+  let plot_count = ref 0 in
 
   let add_query label value unit note =
     queries :=
@@ -251,9 +257,15 @@ let simulate_to_json env stmts sim_number =
     match stmt with
     | SGravity _ | SAirResistance _ | SAirDensity _ | SWindX _ | SWindY _
     | SWindZ _ ->
-        env_inner (* NEW: SWindZ here *)
+        env_inner
     | SProjectile sp -> eval_sprojectile env_inner (SProjectile sp)
     | SPlot pid ->
+        (* Generate a unique id for this specific plot call so that
+           multiple `plot p` calls inside a for-loop each produce a
+           distinct projectile entry (p_1, p_2, … p_N) in the JSON.
+           This gives every trajectory its own colour and render slot. *)
+        incr plot_count;
+        let uid = Printf.sprintf "%s_%d" pid !plot_count in
         let pv = get_projectile pid env_inner.projectiles in
         let x0, y0, z0, _ = pv.launch_from in
         let mass, cd, area = get_drag_params pv in
@@ -277,26 +289,26 @@ let simulate_to_json env stmts sim_number =
                  Printf.sprintf "[%s,%s,%s]" (jf x) (jf y) (jf z))
                traj3d)
         in
-        proj_jsons := !proj_jsons @ [ proj_to_json pid pv ];
+        proj_jsons := !proj_jsons @ [ proj_to_json uid pv ];
         annotations :=
           !annotations
           @ [
               jobj
                 [
                   ("type", Some (js "range"));
-                  ("p", Some (js pid));
+                  ("p", Some (js uid));
                   ("value", Some (jf r));
                 ];
               jobj
                 [
                   ("type", Some (js "max_height"));
-                  ("p", Some (js pid));
+                  ("p", Some (js uid));
                   ("value", Some (jf mh));
                 ];
               jobj
                 [
                   ("type", Some (js "points3d"));
-                  ("p", Some (js pid));
+                  ("p", Some (js uid));
                   ("value", Some pts3d_json);
                 ];
             ];
@@ -501,7 +513,6 @@ let simulate_to_json env stmts sim_number =
       ("wind_x", Some (jf dp.wind_x));
       ("wind_y", Some (jf dp.wind_y));
       ("wind_z", Some (jf dp.wind_z));
-      (* NEW *)
       ("projectiles", Some (jarr !proj_jsons));
       ("annotations", Some (jarr !annotations));
       ("bounces", Some (jarr !bounces));
@@ -607,7 +618,6 @@ let fork_branch_to_json env proj_name (pv : projectile_val) branch =
       ("wind_x", Some (jf 0.0));
       ("wind_y", Some (jf 0.0));
       ("wind_z", Some (jf 0.0));
-      (* NEW *)
       ("projectiles", Some (jarr [ proj_to_json proj_name pv ]));
       ("annotations", Some (jarr annotations));
       ("bounces", Some (jarr bounces));

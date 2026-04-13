@@ -221,6 +221,34 @@ header{
 .toggle-btn:hover{border-color:var(--purple);color:var(--purple);}
 .toggle-btn.active3d{border-color:var(--purple);color:var(--purple);
   background:rgba(179,157,255,.1);box-shadow:0 0 10px rgba(179,157,255,.3);}
+/* ── 3D toggle button — distinct purple accent so it's always easy to spot ── */
+#toggleDim{
+  border-color:rgba(179,157,255,.7);color:var(--purple);
+  background:rgba(179,157,255,.1);
+  padding:7px 22px;font-size:.76rem;letter-spacing:1.8px;
+  box-shadow:0 0 12px rgba(179,157,255,.25),inset 0 0 0 1px rgba(179,157,255,.08);
+}
+#toggleDim:hover{
+  border-color:var(--purple);background:rgba(179,157,255,.2);
+  box-shadow:0 0 20px rgba(179,157,255,.5),inset 0 0 0 1px rgba(179,157,255,.15);
+  color:var(--purple);
+}
+#toggleDim.active3d{
+  border-color:var(--purple);background:rgba(179,157,255,.22);
+  box-shadow:0 0 24px rgba(179,157,255,.6),inset 0 0 0 1px rgba(179,157,255,.2);
+  color:var(--purple);
+}
+body.light #toggleDim{
+  border-color:rgba(68,34,187,.55);color:var(--purple);
+  background:rgba(68,34,187,.07);
+  box-shadow:0 0 10px rgba(68,34,187,.15);
+}
+body.light #toggleDim:hover{
+  background:rgba(68,34,187,.14);box-shadow:0 0 16px rgba(68,34,187,.28);
+}
+body.light #toggleDim.active3d{
+  background:rgba(68,34,187,.14);box-shadow:0 0 18px rgba(68,34,187,.32);
+}
 .run-btn{background:var(--glow);color:#000;border:none;padding:7px 18px;border-radius:4px;
   font-family:var(--font-logo);font-size:.62rem;font-weight:700;letter-spacing:1.5px;
   cursor:pointer;transition:all .18s;box-shadow:0 0 16px rgba(0,255,231,.4);flex-shrink:0}
@@ -284,6 +312,15 @@ canvas{width:100%;height:100%;display:block}
   font-size:.57rem;color:var(--dim);letter-spacing:1px;pointer-events:none;z-index:9;
   white-space:nowrap;display:none;background:rgba(8,10,15,.75);
   padding:3px 12px;border-radius:3px;border:1px solid var(--border);}
+/* ── plot selector chips ── */
+#plotSelector{position:absolute;top:10px;right:14px;z-index:8;display:none;gap:4px;flex-wrap:wrap}
+.plot-sel-btn{flex-shrink:0;background:rgba(0,0,0,.45);border:1px solid var(--border);color:var(--dim);
+  padding:3px 10px;border-radius:3px;font-size:.6rem;letter-spacing:.5px;cursor:pointer;
+  font-family:var(--font-ui);font-weight:500;transition:all .15s;backdrop-filter:blur(4px)}
+.plot-sel-btn:hover{border-color:var(--glow);color:var(--glow)}
+.plot-sel-btn.psel-active{border-color:var(--glow);color:var(--glow);background:rgba(0,255,231,.1);box-shadow:0 0 6px rgba(0,255,231,.18)}
+body.light #plotSelector .plot-sel-btn{background:rgba(255,255,255,.75);border-color:var(--border);color:#4a5580}
+body.light #plotSelector .plot-sel-btn.psel-active{border-color:var(--glow);color:var(--glow);background:rgba(0,85,187,.07)}
 </style>
 </head>
 <body>
@@ -304,6 +341,7 @@ canvas{width:100%;height:100%;display:block}
   <div class="viewport-wrap">
     <div class="canvas-container" id="canvasContainer">
       <div class="canvas-label" id="canvasLabel">TRAJECTORY PLOT</div>
+      <div id="plotSelector"></div>
       <canvas id="mainCanvas"></canvas>
       <div id="threejsContainer"></div>
       <div class="hint-3d" id="hint3d">⟲ drag to orbit &nbsp;·&nbsp; ⊕ scroll to zoom &nbsp;·&nbsp; ▶ RUN to animate</div>
@@ -331,8 +369,19 @@ const IMG_EARTH   = __IMG_EARTH__;
 /* ── palette ── */
 const PALETTE=['#00ffe7','#ff4d6d','#ffe156','#39ff8f','#ff9f43','#a29bfe',
                '#74b9ff','#fd79a8','#55efc4','#fdcb6e','#e17055','#6c5ce7'];
-const _cmap={};let _cidx=0;
-const colorFor=id=>{if(!_cmap[id])_cmap[id]=PALETTE[(_cidx++)%PALETTE.length];return _cmap[id];};
+/* darker, saturated colours for light backgrounds */
+const LIGHT_PALETTE=['#0055cc','#cc1133','#8b6000','#006633','#b84400','#4422bb',
+                     '#006699','#bb2266','#007755','#cc7700','#aa4422','#5533aa'];
+const _darkMap={};const _lightMap={};let _di=0,_li=0;
+const colorFor=id=>{
+  if(isLightTheme()){
+    if(!_lightMap[id])_lightMap[id]=LIGHT_PALETTE[(_li++)%LIGHT_PALETTE.length];
+    return _lightMap[id];
+  }else{
+    if(!_darkMap[id])_darkMap[id]=PALETTE[(_di++)%PALETTE.length];
+    return _darkMap[id];
+  }
+};
 
 /* fork branch colours — each planet gets its own distinct colour */
 const FORK_COLORS={
@@ -433,6 +482,7 @@ const chV=document.getElementById('chV');
 const runBtn=document.getElementById('runBtn');
 
 let session=null,trajectories=[],bounceTrajs=[],collisionPts=[];
+let currentPlotIdx=-1; /* -1 = trajectory view; 0+ = session.plots[i] */
 const PL=58,PR=18,PT=24,PB=46;
 let sx=1,sy=1,ox=0,oy=0;
 let af=0,isAnim=false,animH=null,totF=1;
@@ -616,6 +666,123 @@ function renderSim(){
   }
 
   drawCollisionMarkers();
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MULTI-PLOT RENDERER
+   Handles session.plots[] — additional line charts (e.g. speed vs time,
+   energy vs time) produced by `plot` statements in a simulate block.
+   Each plot object: { label, x_label, y_label,
+     series:[{ id, color?, points:[{x,y}] }] }
+══════════════════════════════════════════════════════════════════ */
+function renderPlot(plot){
+  canvas.width=canvas.clientWidth;canvas.height=canvas.clientHeight;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const series=plot.series||[];
+  if(!series.length)return;
+
+  /* bounds */
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  series.forEach(s=>s.points.forEach(p=>{
+    if(p.x<minX)minX=p.x;if(p.x>maxX)maxX=p.x;
+    if(p.y<minY)minY=p.y;if(p.y>maxY)maxY=p.y;
+  }));
+  if(!isFinite(minX))return;
+  const rangeX=maxX-minX||1,rangeY=maxY-minY||1;
+  const padY=rangeY*0.1;
+  minY-=padY;maxY+=padY;
+
+  const W=canvas.width-PL-PR,H=canvas.height-PT-PB;
+  const scX=W/(maxX-minX),scY=H/(maxY-minY);
+  const toP=(wx,wy)=>({cx:PL+(wx-minX)*scX,cy:canvas.height-PB-(wy-minY)*scY});
+
+  /* grid */
+  const t=tc();
+  ctx.save();
+  ctx.font='500 10px Space Grotesk,sans-serif';
+  const xi=niceI(maxX-minX,8),yi=niceI(maxY-minY,5);
+  ctx.strokeStyle=t.gridLine;ctx.lineWidth=1;
+  for(let v=Math.ceil(minX/xi)*xi;v<=maxX+xi*.01;v+=xi){
+    const cx=PL+(v-minX)*scX;if(cx>canvas.width-PR+4)break;
+    ctx.beginPath();ctx.moveTo(cx,PT);ctx.lineTo(cx,canvas.height-PB);ctx.stroke();
+  }
+  for(let v=Math.ceil(minY/yi)*yi;v<=maxY+yi*.01;v+=yi){
+    const cy=canvas.height-PB-(v-minY)*scY;if(cy<PT-4)break;
+    ctx.beginPath();ctx.moveTo(PL,cy);ctx.lineTo(canvas.width-PR,cy);ctx.stroke();
+  }
+  ctx.fillStyle=t.gridText;
+  ctx.textAlign='center';
+  for(let v=Math.ceil(minX/xi)*xi;v<=maxX+xi*.01;v+=xi){
+    const cx=PL+(v-minX)*scX;if(cx>canvas.width-PR+4)break;
+    ctx.fillText(v.toFixed(1),cx,canvas.height-PB+16);
+  }
+  ctx.textAlign='right';
+  for(let v=Math.ceil(minY/yi)*yi;v<=maxY+yi*.01;v+=yi){
+    const cy=canvas.height-PB-(v-minY)*scY;if(cy<PT-4)break;
+    ctx.fillText(v.toFixed(2),PL-5,cy+4);
+  }
+  ctx.strokeStyle=t.axis;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(PL,PT);ctx.lineTo(PL,canvas.height-PB);ctx.lineTo(canvas.width-PR,canvas.height-PB);ctx.stroke();
+  /* axis labels */
+  ctx.fillStyle=t.rangeLabel;ctx.font='600 10px Space Grotesk,sans-serif';
+  ctx.textAlign='center';ctx.fillText(plot.x_label||'X',PL+W/2,canvas.height-PB+32);
+  ctx.fillStyle=t.heightLabel;
+  ctx.save();ctx.translate(12,canvas.height-PB-H/2);ctx.rotate(-Math.PI/2);ctx.fillText(plot.y_label||'Y',0,0);ctx.restore();
+  /* title */
+  ctx.fillStyle=t.gridText;ctx.font='600 11px Space Grotesk,sans-serif';
+  ctx.textAlign='center';ctx.fillText(plot.label||'',PL+W/2,PT-6);
+  ctx.restore();
+
+  /* series lines */
+  series.forEach(s=>{
+    if(s.points.length<2)return;
+    const col=s.color||colorFor(s.id||'p');
+    ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.shadowColor=col;ctx.shadowBlur=8;
+    ctx.beginPath();
+    s.points.forEach((p,i)=>{const{cx,cy}=toP(p.x,p.y);if(i===0)ctx.moveTo(cx,cy);else ctx.lineTo(cx,cy);});
+    ctx.stroke();ctx.restore();
+  });
+
+  /* mini legend for multiple series */
+  if(series.length>1){
+    const lx=PL+10,ly=PT+10;
+    series.forEach((s,i)=>{
+      const col=s.color||colorFor(s.id||'p');
+      ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.shadowColor=col;ctx.shadowBlur=4;
+      ctx.beginPath();ctx.moveTo(lx,ly+i*16+4);ctx.lineTo(lx+18,ly+i*16+4);ctx.stroke();
+      ctx.fillStyle=col;ctx.font='500 9px Space Grotesk,sans-serif';ctx.textAlign='left';
+      ctx.fillText(s.id||('series '+(i+1)),lx+22,ly+i*16+8);
+      ctx.restore();
+    });
+  }
+}
+
+/* ── plot selector UI ── */
+function setupPlotSelector(s){
+  const sel=document.getElementById('plotSelector');
+  sel.innerHTML='';
+  const plots=(s.plots||[]).concat(
+    /* also collect annotations of type 'plot' as additional charts */
+    (s.annotations||[]).filter(a=>a.type==='plot')
+  );
+  if(!plots.length){sel.style.display='none';return;}
+  sel.style.display='flex';
+
+  const mkBtn=(label,idx)=>{
+    const b=document.createElement('button');
+    b.className='plot-sel-btn'+(idx===-1?' psel-active':'');
+    b.textContent=label;
+    b.onclick=()=>{
+      currentPlotIdx=idx;
+      sel.querySelectorAll('.plot-sel-btn').forEach(btn=>btn.classList.remove('psel-active'));
+      b.classList.add('psel-active');
+      if(idx<0){document.getElementById('canvasLabel').textContent='TRAJECTORY PLOT';renderSim();}
+      else{document.getElementById('canvasLabel').textContent=(plots[idx].label||('Plot '+(idx+1))).toUpperCase();renderPlot(plots[idx]);}
+    };
+    return b;
+  };
+  sel.appendChild(mkBtn('TRAJECTORY',-1));
+  plots.forEach((pl,i)=>sel.appendChild(mkBtn(pl.label||('Plot '+(i+1)),i)));
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1354,6 +1521,7 @@ function generateWalls(level,cw,groundY){
 let gameCleanup=null;
 function loadSession(s){
   session=s;trajectories=[];bounceTrajs=[];collisionPts=[];
+  currentPlotIdx=-1;
   isAnim=false;if(animH)cancelAnimationFrame(animH);
   af=0;progressBar.style.width='0%';runBtn.disabled=false;
   tooltip.style.display='none';
@@ -1368,6 +1536,7 @@ function loadSession(s){
   if(s.mode==='game'){
     document.getElementById('toggleDim').style.display='none';
     document.getElementById('legendTitle').textContent='Controls';
+    document.getElementById('plotSelector').style.display='none';
     canvas.style.display='';
     threeContainer.style.display='none';
     hint3d.style.display='none';
@@ -1378,16 +1547,11 @@ function loadSession(s){
     return;
   }
 
-  /* ── fork always renders in 2D; reset 3D state so returning to a sim
-       doesn't accidentally stay in 3D-for-fork limbo ── */
-  if(s.mode==='fork'){
-    is3D=false;
-    document.getElementById('toggleDim').classList.remove('active3d');
-  }
-  document.getElementById('toggleDim').style.display=(s.mode==='fork'?'none':'');
+  /* ── fork and simulate both support 3D ── */
+  document.getElementById('toggleDim').style.display='';
   document.getElementById('legendTitle').textContent='Trajectories';
 
-  /* ── 3D mode (only reachable for sim blocks now) ── */
+  /* ── 3D mode (simulate and fork) ── */
   if(is3D){
     canvas.style.display='none';
     threeContainer.style.display='block';
@@ -1426,7 +1590,9 @@ function loadSession(s){
   totF=Math.max(...[...trajectories,...bounceTrajs].map(t=>(t.launchDelay||0)+t.points.length),1);
   canvas.onmousemove=handleSimHover;
   canvas.onmouseleave=()=>{tooltip.style.display='none';chH.style.opacity='0';chV.style.opacity='0';};
-  updateSidebar(s);resize();
+  updateSidebar(s);
+  setupPlotSelector(s);
+  resize();
 }
 
 /* ── animation (RUN button) ── */
@@ -1451,6 +1617,11 @@ function resize(){
       threeState.resize(c.clientWidth,c.clientHeight);
     }
     return;
+  }
+  /* dispatch to the currently selected plot or trajectory view */
+  if(currentPlotIdx>=0&&session){
+    const plots=(session.plots||[]).concat((session.annotations||[]).filter(a=>a.type==='plot'));
+    if(plots[currentPlotIdx]){renderPlot(plots[currentPlotIdx]);return;}
   }
   renderSim();
 }
