@@ -16,6 +16,7 @@ jobs:
           ocaml-compiler: 5.1
 
       - run: opam install . --deps-only --with-test -y
+      - run: opam install ocamlformat -y
       - run: opam exec -- dune build
       - run: opam exec -- dune runtest
       - run: opam exec -- dune fmt
