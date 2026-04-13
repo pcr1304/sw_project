@@ -1,832 +1,795 @@
-# 📘 ProjX DSL Project
+# ProjX
 
-![DSL](https://img.shields.io/badge/Language-DSL-blue)
-![OCaml](https://img.shields.io/badge/Built%20With-OCaml-orange)
-![Status](https://img.shields.io/badge/Status-Complete-success)
-![License](https://img.shields.io/badge/License-Academic-lightgrey)
+ProjX is a domain-specific language for modeling projectile motion, running physics simulations, comparing trajectories across environments, and generating an interactive browser-based visualization. It lets users describe ballistics scenarios with a compact `.px` syntax instead of writing low-level physics or rendering code.
 
----
-
-## 📑 Table of Contents
-
-- [📌 Introduction](#-introduction)
-- [🎯 Motivation](#-motivation)
-- [👥 Target Users](#-target-users)
-- [🧠 DSL Description](#-dsl-description)
-- [💻 Sample Program](#-sample-program)
-- [📊 Output](#-output)
-- [🏗️ Architecture](#-architecture)
-- [⚙️ Build & Run](#️-build--run)
-- [👨‍💻 Team Contributions](#-team-contributions)
-- [📋 User Survey](#-user-survey)
-- [🎥 Demo](#-demo)
-- [🚀 Features](#-features)
-- [📚 Physics Formulas](#-physics-formulas)
-- [🏁 Conclusion](#-conclusion)
+The current implementation supports 2D/3D projectile setup, drag and wind configuration, collision and distance queries, bounce studies, branch-based scenario comparison, and a simple planetary game mode. Running a ProjX program produces JSON on stdout and a standalone HTML simulation dashboard you can open directly in a browser.
 
 ---
 
-## 📌 Introduction
+## Table of Contents
 
-ProjX is a **Domain-Specific Language (DSL)** designed specifically for modeling, simulating, and visualizing **projectile motion** in an intuitive and structured manner.
-
-Unlike general-purpose programming languages, ProjX allows users to express physical motion using domain-level constructs such as `projectile`, `simulate`, and `plot`, without worrying about low-level implementation details.
-
-The DSL integrates:
-- Physics-based computation  
-- Structured syntax  
-- Visual rendering (via canvas)  
-
-This makes it a powerful educational and analytical tool for understanding projectile motion behavior.
-
----
-
-## 🎯 Motivation
-
-Projectile motion is a fundamental concept in physics, yet implementing it programmatically involves:
-
-- Complex mathematical formulas  
-- Time-based simulation loops  
-- Lack of visualization support  
-
-Students often find it difficult to relate theoretical equations with real-world motion.
-
-ProjX addresses these challenges by:
-
-- Providing **high-level abstractions** directly aligned with physics concepts  
-- Eliminating the need to manually derive and implement formulas  
-- Enabling **instant visualization of motion**  
-- Allowing analytical queries like range, collision, and maximum height  
-
-Thus, ProjX bridges the gap between **mathematical theory and practical understanding**.
-
----
-
-## 👥 Target Users
-
-- 🎓 Students learning projectile motion  
-- 👨‍🏫 Educators teaching physics concepts  
-- 👨‍💻 Developers exploring DSL design  
-- 🧪 Researchers prototyping simulations  
-
----
-## 🧠 DSL Description
-
-ProjX is a **Domain-Specific Language (DSL)** designed to model, simulate, and analyze projectile motion using intuitive and structured constructs. The language abstracts complex physics computations into simple keywords, enabling users to focus on problem-solving rather than implementation details.
+- [Motivation](#motivation)
+- [Target Users](#target-users)
+- [Keywords & Lexical Specification](#keywords--lexical-specification)
+  - [Program Structure](#program-structure)
+  - [Allowed Characters](#allowed-characters)
+  - [Delimiters](#delimiters)
+  - [Operators](#operators)
+  - [Comments](#comments)
+  - [Identifiers](#identifiers)
+  - [Literals & Values](#literals--values)
+  - [Variables & Expressions](#variables--expressions)
+  - [Projectile Keywords](#projectile-keywords)
+  - [Simulation Keywords](#simulation-keywords)
+  - [Fork Keywords](#fork-keywords)
+  - [Game Keywords](#game-keywords)
+  - [Control Flow Keywords](#control-flow-keywords)
+  - [Dot Queries](#dot-queries)
+  - [Semantic Rules](#semantic-rules)
+  - [Errors](#errors)
+- [Sample Code](#sample-code)
+- [Generated Output](#generated-output)
+- [Prerequisites](#prerequisites)
+- [Environment Setup](#environment-setup)
+- [Build & Run Guide](#build--run-guide)
+- [Running Tests](#running-tests)
+- [Common Issues](#common-issues)
+- [Quick Start](#quick-start)
+- [Compilation Pipeline](#compilation-pipeline)
+- [Project Structure](#project-structure)
+- [Contributing](#contributing)
 
 ---
 
-## 🔤 Keywords and Their Definitions
+## Motivation
 
-### 🔹 1. Variable Handling
+Physics simulations are often split across multiple tools: one for calculations, one for plots, and another for presentation. ProjX brings those steps together in one small language. You write a scenario once, and the compiler handles tokenizing, parsing, semantic checking, evaluation, JSON generation, and HTML visualization for you.
 
-#### `let`
-- Used to **declare and initialize a variable**
-- Stores the value in the environment for later use  
-- Syntax:
-```plaintext
-let x = 10
-```
-- Rules:
-  - Variable must not be previously declared  
-  - Supports numeric expressions  
+ProjX is especially useful when you want to:
 
----
+- prototype projectile-motion scenarios quickly
+- compare the same launch across different gravity settings
+- inspect range, peak height, collisions, and bounce behavior
+- generate a visual artifact without building a separate frontend
 
-#### `set`
-- Used to **update an existing variable**
-- Allows dynamic modification during execution  
-- Syntax:
-```plaintext
-set x = x + 5
-```
-- Rules:
-  - Variable must already be declared using `let`  
+## Target Users
+
+- Students learning projectile motion, kinematics, and simulation
+- Developers building small physics demos or visual experiments
+- Instructors who want readable scenario files for teaching
+- Anyone interested in turning a concise physics script into an interactive HTML output
 
 ---
 
-### 🔹 2. Object Definition
+## Keywords & Lexical Specification
 
-#### `projectile`
-- Defines a **projectile object** with physical parameters  
-- Syntax:
-```plaintext
-projectile p1 {
-    angle 45
-    speed 30
-    launch_from (0,0,0)
+This section describes the current ProjX syntax implemented by `tokenizer.ml`, `parser.ml`, `checker.ml`, and `eval.ml`.
+
+### Program Structure
+
+A `.px` file is a sequence of top-level statements. The parser currently accepts these statement forms:
+
+- `projectile`
+- `simulate`
+- `fork`
+- `game`
+- `let`
+- `set`
+- `for`
+- `repeat`
+- `while`
+- `if ... else`
+
+Example:
+
+```px
+let g = 9.8
+
+projectile ball {
+  angle 45
+  speed 30
 }
-```
 
-- Required fields:
-  - `angle` → launch angle in degrees  
-  - `speed` → initial velocity  
-
-- Optional field:
-  - `launch_from (x, y, t)` → initial position and time  
-
-- Rules:
-  - Each projectile must have a unique name  
-  - Must define at least `angle` and `speed`  
-
----
-
-### 🔹 3. Simulation Block
-
-#### `simulate`
-- Defines the **main execution block** where physics calculations and visualization occur  
-- Syntax:
-```plaintext
 simulate {
-    gravity 9.8
-    plot p1
+  gravity g
+  plot ball
 }
 ```
 
-- Rules:
-  - Must contain exactly one `gravity` statement  
-  - Should include at least one `plot`  
-  - All queries and actions are executed inside this block  
+Notes:
 
----
+- There is no required top-level ordering, but variables and projectiles must be declared before use.
+- `projectile` blocks can appear both at top level and inside `simulate` blocks.
+- Blocks are delimited with `{ ... }`; statements are separated by whitespace and block boundaries, not semicolons.
 
-#### `gravity`
-- Specifies the **gravitational acceleration** used in simulation  
-- Syntax:
-```plaintext
-gravity 9.8
-```
+### Allowed Characters
 
-- Rules:
-  - Must appear inside `simulate`  
-  - Only one gravity definition allowed per simulation  
+| Category | Characters | Description |
+|----------|------------|-------------|
+| Letters | `a-z`, `A-Z` | Used in identifiers and keywords |
+| Digits | `0-9` | Used in integer and floating-point literals |
+| Underscore | `_` | Allowed in identifiers and keywords such as `launch_from` |
+| Whitespace | space, tab, newline, carriage return | Used to separate tokens |
+| Quotes | `"` | Used for branch labels |
+| Symbols | `{ } ( ) , . = + - * / < > ! #` | Used for blocks, operators, dot queries, and comments |
 
----
+### Delimiters
 
-#### `plot`
-- Used to **visualize the trajectory** of a projectile  
-- Syntax:
-```plaintext
-plot p1
-```
+| Symbol | Description |
+|--------|-------------|
+| `{ }` | Define blocks such as `projectile`, `simulate`, `fork`, `game`, and control-flow bodies |
+| `( )` | Used in `launch_from`, `tower (...)`, and dot-query arguments |
+| `,` | Separates tuple/query arguments |
+| `.` | Introduces a dot query such as `range.ball()` |
+| `"` | Wraps branch labels |
 
-- Behavior:
-  - Generates graphical output (trajectory curve)  
-  - Can be used multiple times for different projectiles  
+### Operators
 
----
+| Type | Operators | Description |
+|------|-----------|-------------|
+| Arithmetic | `+ - * /` | Numeric expressions |
+| Comparison | `< > <= >= == !=` | Used inside conditions |
+| Logical | `and or not` | Used in `if`, `while`, and `check` conditions |
+| Assignment | `=` | Used in `let` and `set` |
 
-### 🔹 4. Analytical Queries
+#### Expression Precedence
 
-#### `range`
-- Computes the **horizontal distance travelled** by a projectile  
-- Syntax:
-```plaintext
-range p1
-```
-- Output:
-  - Displays numeric value  
+| Level | Operators |
+|-------|-----------|
+| 1 | Unary `+`, unary `-` |
+| 2 | `*`, `/` |
+| 3 | `+`, `-` |
+| 4 | `<`, `>`, `<=`, `>=`, `==`, `!=` |
+| 5 | `not` |
+| 6 | `and`, `or` |
 
----
+Notes:
 
-#### `max_height`
-- Computes the **maximum vertical height** reached  
-- Syntax:
-```plaintext
-max_height p1
-```
+- Arithmetic operators are left-associative.
+- In the current parser, `and` and `or` are parsed left-to-right at the same precedence level.
+- Parentheses are supported inside arithmetic expressions such as `(a + b) * 2`.
 
----
+### Comments
 
-#### `max_range`
-- Computes the **maximum possible range** for given velocity  
-- Syntax:
-```plaintext
-max_range p1
-```
-
----
-
-#### `min_vel`
-- Computes the **minimum velocity required to reach a target point**  
-- Syntax:
-```plaintext
-min_vel p1 tower (x, h)
-```
-
-- Meaning:
-  - `(x, h)` represents horizontal distance and height of target  
-
----
-
-#### `collide`
-- Determines whether **two projectiles intersect during motion**  
-- Syntax:
-```plaintext
-collide p1 p2
-```
-
-- Output:
-  - Boolean result (true/false)  
-
----
-
-#### `min_dist`
-- Computes the **minimum distance between two projectiles**  
-- Syntax:
-```plaintext
-min_dist p1 p2
-```
-
----
-
-### 🔹 5. Advanced Features
-
-#### `bounce`
-- Simulates **bouncing motion with energy loss**  
-- Syntax:
-```plaintext
-bounce p1 times 2 restitution 0.8
-```
-
-- Parameters:
-  - `times` → number of bounces  
-  - `restitution` → energy retention factor (0 to 1)  
-
----
-
-#### `fork`
-- Simulates the same projectile under **multiple environmental conditions**  
-- Syntax:
-```plaintext
-fork p1 {
-    branch "Earth" { gravity 9.8 }
-    branch "Moon" { gravity 1.62 }
-}
-```
-
-- Purpose:
-  - Compare projectile behavior across different gravities  
-
----
-
-#### `game`
-- Enables **interactive simulation mode**  
-- Syntax:
-```plaintext
-game {
-    planet earth
-    level 2
-    lives 3
-}
-```
-
-- Behavior:
-  - Runs simulation with user interaction (implementation dependent)  
-
----
-
-### 🔹 6. Control Flow Constructs
-
-#### `if`
-- Executes block **conditionally**  
-- Syntax:
-```plaintext
-if x > 10 {
-    range p1
-}
-```
-
----
-
-#### `for`
-- Executes loop over a defined range  
-- Syntax:
-```plaintext
-for i from 1 to 5 step 1 {
-    range p1
-}
-```
-
----
-
-#### `while`
-- Executes loop while condition is true  
-- Syntax:
-```plaintext
-while x < 100 {
-    set x = x + 10
-}
-```
-
----
-
-### 🔹 7. Special Feature
-
-#### Dot Notation
-- Allows **query results to be used as values instead of direct output**  
-- Syntax:
-```plaintext
-let r = range.p1()
-```
-
-- Features:
-  - Returns computed value  
-  - Can be used in expressions and conditions  
-  - Does not trigger visualization  
-
----
-
-## 🔤 Allowed Characters and Lexical Rules
-
-The ProjX DSL follows a well-defined set of lexical rules that determine how programs are written and interpreted. These rules ensure consistency, readability, and correct parsing of the language.
-
----
-
-### 🔹 1. Alphabets
-
-- Uppercase letters: `A–Z`  
-- Lowercase letters: `a–z`  
-
-📌 Used for:
-- Variable names  
-- Projectile names  
-- Keywords  
+| Syntax | Description |
+|--------|-------------|
+| `# comment` | Everything from `#` to the end of the line is ignored |
 
 Example:
-```plaintext
-let angle = 45
-projectile p1 { angle 30 speed 20 }
+
+```px
+# Earth gravity
+let g = 9.8
 ```
 
----
+### Identifiers
 
-### 🔹 2. Digits
+| Rule | Description |
+|------|-------------|
+| Start | Must begin with a letter or `_` |
+| Rest | May contain letters, digits, or `_` |
+| Restriction | Cannot be one of the reserved keywords listed below |
 
-- `0–9`  
+Examples:
 
-📌 Used for:
-- Numeric constants  
-- Expressions  
+- Valid: `ball`, `sweep1`, `_temp`, `drag_profile`
+- Invalid: `3ball`, `launch-from`
 
-Example:
-```plaintext
-let speed = 30
-let height = speed * 2
+### Literals & Values
+
+| Kind | Examples | Notes |
+|------|----------|-------|
+| Integer | `0`, `5`, `42` | Accepted wherever numeric expressions are allowed |
+| Float | `9.8`, `0.05`, `-3.2` | Negative values are parsed via unary minus |
+| String | `"Earth"` | Used for `branch` labels |
+| Boolean flags | `true`, `false` | Accepted by `air_resistance` |
+
+Important:
+
+- Variables are numeric at runtime.
+- There are no user-declared string or boolean variables in the current implementation.
+- Planet names such as `earth` and projectile names such as `ball` are identifiers, not strings.
+
+### Variables & Expressions
+
+ProjX supports numeric variables and arithmetic expressions.
+
+| Keyword | Syntax | Description |
+|--------|--------|-------------|
+| `let` | `let x = 10` | Declare a numeric variable |
+| `set` | `set x = x + 1` | Reassign an existing variable |
+
+Examples:
+
+```px
+let g = 9.8
+let v0 = 25 + 5
+set v0 = v0 * 2
 ```
 
----
+Expressions can contain:
 
-### 🔹 3. Special Symbols
+- numeric literals
+- numeric variables
+- arithmetic operators
+- parenthesized arithmetic expressions
+- dot queries such as `range.ball()` or `max_height.ball(9.8)`
 
-```
-{ } ( ) , .
-```
+### Projectile Keywords
 
-📌 Purpose:
+`projectile` defines a projectile configuration either at top level or inside a `simulate` block.
 
-- `{ }` → Define blocks (e.g., `simulate`, `projectile`)  
-- `( )` → Used in tuples and function-like syntax  
-- `,` → Separates values (e.g., coordinates)  
-- `.` → Used in dot notation  
-
-Example:
-```plaintext
-projectile p1 {
-    launch_from (0,0,0)
+```px
+projectile cannon {
+  angle 45
+  angle_azimuth 30
+  speed 70
+  launch_from (20, 30, 40)
+  mass 5.0
+  drag_coefficient 0.3
+  cross_section 0.05
 }
-
-let r = range.p1()
 ```
 
----
+| Keyword | Syntax | Description |
+|--------|--------|-------------|
+| `projectile` | `projectile <name> { ... }` | Start a projectile block |
+| `angle` | `angle <expr>` | Elevation angle in degrees |
+| `angle_azimuth` | `angle_azimuth <expr>` | Horizontal aim angle in degrees; optional, defaults to `0` |
+| `speed` | `speed <expr>` | Initial launch speed |
+| `launch_from` | `launch_from (x, y, z)` or `launch_from (x, y, z, t)` | Initial position and optional launch delay |
+| `mass` | `mass <expr>` | Optional mass, used in drag-aware simulation |
+| `drag_coefficient` | `drag_coefficient <expr>` | Optional drag coefficient |
+| `cross_section` | `cross_section <expr>` | Optional cross-sectional area |
 
-### 🔹 4. Operators
+Rules:
 
-#### Arithmetic Operators
-```
-+   -   *   /
-```
+- `angle` is mandatory.
+- `speed` is mandatory.
+- Other projectile fields are optional.
+- Projectile properties can appear in any order inside the block.
 
-Used for mathematical expressions:
-```plaintext
-let x = 10 + 5
-```
+### Simulation Keywords
 
----
+`simulate` runs a physics scenario and generates output.
 
-#### Relational Operators
-```
->   <   >=   <=   ==   !=
-```
-
-Used in conditions:
-```plaintext
-if x > 10 {
-    range p1
-}
-```
-
----
-
-### 🔹 5. Whitespace
-
-- Spaces  
-- Tabs  
-- Newlines  
-
-📌 Purpose:
-- Improves readability  
-- Separates tokens  
-
-Example:
-```plaintext
-let x = 10
-let y = 20
-```
-
----
-
-### 🔹 6. Identifiers (Naming Rules)
-
-Identifiers are names given to variables and projectiles.
-
-#### Rules:
-- Must start with a **letter (a–z or A–Z)**  
-- Can contain **letters and digits**  
-- Cannot contain special characters  
-- Cannot be a reserved keyword  
-
-#### Valid Examples:
-```plaintext
-angle
-speed1
-p1
-```
-
-#### Invalid Examples:
-```plaintext
-1angle    ✘ starts with digit
-angle@    ✘ special character not allowed
-```
-
----
-
-### 🔹 7. Reserved Keywords
-
-The following words are reserved and cannot be used as identifiers:
-
-```
-let, set, projectile, simulate, gravity, plot,
-range, max_height, max_range, min_vel,
-collide, min_dist, bounce, fork, game,
-if, for, while
-```
-
----
-
-### 🔹 8. Case Sensitivity
-
-- The language is **case-sensitive**
-
-#### Example:
-```plaintext
-let x = 10   ✔ valid
-LET x = 10   ✘ invalid
-```
-
----
-
-### 🔹 9. Numeric Format
-
-- Only **integer and floating-point values** are allowed  
-- Scientific notation is not supported (if not implemented)
-
-Example:
-```plaintext
-gravity 9.8
-let v = 25
-```
-
----
-
-### 📌 Summary
-
-The lexical structure of ProjX ensures:
-- Clear syntax rules  
-- Easy parsing and interpretation  
-- Consistent naming and formatting  
-
-These constraints help maintain the **reliability and simplicity** of the DSL.
-
----
-
-## 💻 Sample Program
-
-### 🔹 Example 1: Basic & Intermediate Features
-
-```plaintext
-# Variable declarations
-let angle1 = 45
-let angle2 = 60
-let speed1 = 30
-let speed2 = 25
-
-# Define projectiles
-projectile p1 {
-    angle angle1
-    speed speed1
-    launch_from (0,0,0)
-}
-
-projectile p2 {
-    angle angle2
-    speed speed2
-}
-
-# Simulation block
+```px
 simulate {
+  gravity 9.8
+  air_resistance true
+  air_density 1.225
+  wind_x 0
+  wind_y 4
+  wind_z 2
+  plot cannon
+  range cannon
+  max_height cannon
+  check range.cannon() > 200
+}
+```
+
+| Keyword | Syntax | Description |
+|--------|--------|-------------|
+| `simulate` | `simulate { ... }` | Start a simulation block |
+| `gravity` | `gravity <expr>` | Set gravity for the block |
+| `air_resistance` | `air_resistance true` | Enable or disable drag calculations |
+| `air_density` | `air_density <expr>` | Air density used when drag is enabled |
+| `wind_x` | `wind_x <expr>` | Wind along the X axis |
+| `wind_y` | `wind_y <expr>` | Wind along the Y axis |
+| `wind_z` | `wind_z <expr>` | Wind along the Z axis |
+| `plot` | `plot <projectile>` | Plot a projectile trajectory |
+| `range` | `range <projectile>` | Report the projectile's range |
+| `max_range` | `max_range <projectile>` | Report ideal maximum range |
+| `max_height` | `max_height <projectile>` | Report maximum height |
+| `max_rectangle` | `max_rectangle <projectile>` | Report the maximum area rectangle under the arc |
+| `min_vel` | `min_vel <projectile> tower (x, h)` | Compute minimum launch velocity needed to clear a tower |
+| `collide` | `collide <p1> <p2>` | Check whether two projectiles collide |
+| `collision_vel` | `collision_vel <p1> <p2>` | Report collision velocity components |
+| `min_dist` | `min_dist <p1> <p2>` | Report minimum distance between two trajectories |
+| `bounce` | `bounce <projectile> times <n> restitution <r>` | Generate bounce arcs |
+| `check` | `check <condition>` | Evaluate a condition and record pass/fail |
+| `projectile` | `projectile <name> { ... }` | Inline projectile declaration inside the simulation |
+
+Notes:
+
+- `air_resistance` also accepts a numeric literal; values greater than `0` are treated as enabled.
+- Inline `projectile` definitions inside a `simulate` block become available to later statements in that block.
+
+### Fork Keywords
+
+`fork` creates multiple simulation-style branches for an already declared projectile.
+
+```px
+fork cannon {
+  branch "Earth" {
     gravity 9.8
-
-    # Plot trajectories
-    plot p1
-    plot p2
-
-    # Basic queries
-    range p1
-    max_height p1
-
-    range p2
-    max_height p2
-
-    # Interaction between projectiles
-    collide p1 p2
-    min_dist p1 p2
-
-    # Bounce simulation
-    bounce p1 times 2 restitution 0.8
+    plot cannon
+  }
+  branch "Moon" {
+    gravity 1.6
+    plot cannon
+  }
 }
 ```
 
----
+| Keyword | Syntax | Description |
+|--------|--------|-------------|
+| `fork` | `fork <projectile> { ... }` | Start a branching comparison |
+| `branch` | `branch "Label" { ... }` | Define one branch with its own simulation statements |
 
-### 📊 Output (Example 1)
+Notes:
 
-#### 🟢 Visualization
-- Two trajectories are plotted:
-  - `p1` (45°) → symmetric curve with maximum range  
-  - `p2` (60°) → higher but shorter trajectory  
-- Bounce of `p1` is shown with decreasing height  
-- If collision occurs, intersection point is marked  
+- The projectile named after `fork` must already exist.
+- Each branch body uses the same simulation-statement language as `simulate`.
+- In practice, each branch should contain a `gravity` statement and at least one `plot`.
 
----
+### Game Keywords
 
-#### 🔵 Numerical Output (Approximate)
+`game` creates a game scenario for the generated HTML UI.
 
-- Range of `p1` ≈ 91.8 units  
-- Max height of `p1` ≈ 22.9 units  
-
-- Range of `p2` ≈ 55.2 units  
-- Max height of `p2` ≈ 24.0 units  
-
-- Collision status → displayed (true/false)  
-- Minimum distance between `p1` and `p2` → computed  
-
----
-
-### 🔹 Example 2: Advanced Features
-
-```plaintext
-# Variable declarations
-let angle = 40
-let speed = 28
-
-# Define projectile
-projectile p {
-    angle angle
-    speed speed
-}
-
-# Dot notation usage (no direct output)
-let r = range.p()
-let h = max_height.p()
-
-# Control flow usage
-if r > 50 {
-    set angle = angle + 5
-}
-
-for i from 1 to 2 step 1 {
-    range p
-}
-
-while angle < 50 {
-    set angle = angle + 1
-}
-
-# Fork simulation (different environments)
-fork p {
-    branch "Earth" {
-        gravity 9.8
-        plot p
-    }
-    branch "Moon" {
-        gravity 1.62
-        plot p
-    }
-}
-
-# Game mode
+```px
 game {
-    planet earth
-    level 2
-    lives 3
+  planet earth
+  level 1
+  lives 3
+}
+```
+
+| Keyword | Syntax | Description |
+|--------|--------|-------------|
+| `game` | `game { ... }` | Start a game block |
+| `planet` | `planet earth` | Select planet/environment |
+| `level` | `level <expr>` | Numeric game level |
+| `lives` | `lives <expr>` | Number of lives |
+
+Valid planets checked by the semantic checker:
+
+- `earth`
+- `moon`
+- `mars`
+- `jupiter`
+- `sun`
+
+Current parser rule:
+
+- The fields must appear in the order `planet`, then `level`, then `lives`.
+
+### Control Flow Keywords
+
+Control flow is available both at top level and, for most cases, inside `simulate` blocks.
+
+| Keyword | Syntax | Description |
+|--------|--------|-------------|
+| `for` | `for i from 1 to 10 step 1 { ... }` | Numeric loop with inclusive upper bound behavior in the evaluator |
+| `from` | used in `for` | Loop start |
+| `to` | used in `for` | Loop end |
+| `step` | used in `for` | Loop increment |
+| `repeat` | `repeat 5 { ... }` | Repeat a block a fixed number of times |
+| `while` | `while x < 10 { ... }` | Loop while a condition holds |
+| `if` | `if x > 0 { ... }` | Conditional execution |
+| `else` | `else { ... }` | Alternate branch |
+| `let` | `let x = 5` | Variable declaration |
+| `set` | `set x = 7` | Variable reassignment |
+
+Example:
+
+```px
+for a from 15 to 75 step 15 {
+  projectile sweep {
+    angle a
+    speed 70
+  }
+
+  simulate {
+    gravity 9.8
+    plot sweep
+  }
+}
+```
+
+### Dot Queries
+
+ProjX also supports query-style expressions that can be used in `let`, `set`, comparisons, and `check` conditions.
+
+| Query | Syntax | Description |
+|-------|--------|-------------|
+| Range | `range.ball()` or `range.ball(g)` | Range of projectile `ball` |
+| Max range | `max_range.ball()` or `max_range.ball(g)` | Maximum theoretical range |
+| Max height | `max_height.ball()` or `max_height.ball(g)` | Maximum height |
+| Max rectangle | `max_rectangle.ball()` or `max_rectangle.ball(g)` | Maximum rectangle area under the arc |
+| Min velocity | `min_vel.ball(x, h)` or `min_vel.ball(x, h, g)` | Minimum velocity to clear a tower |
+| Collision | `collide.(p1, p2)` or `collide.(p1, p2, g)` | Returns `1` for hit, `0` for miss |
+| Min distance | `min_dist.(p1, p2)` or `min_dist.(p1, p2, g)` | Minimum distance between two projectiles |
+
+Example:
+
+```px
+let r = range.ball()
+let mh = max_height.ball(9.8)
+
+if range.ball() > 100 and max_height.ball() > 20 {
+  let ok = 1
+}
+```
+
+### Semantic Rules
+
+The checker currently enforces these important rules:
+
+- Variables must be declared with `let` before they are used.
+- `set` can only update an already declared variable.
+- A variable cannot be declared twice in the same scope with `let`.
+- A projectile must be declared before it is queried, plotted, forked, or compared.
+- Every `simulate` block must contain exactly one `gravity` statement.
+- Every `simulate` block must contain at least one `plot` statement.
+- Every `fork` branch is validated like a simulation block, so the same gravity/plot expectations apply there.
+- Every `projectile` block must include both `angle` and `speed`.
+- `game` planets must be one of `earth`, `moon`, `mars`, `jupiter`, or `sun`.
+
+### Errors
+
+Typical errors you may encounter:
+
+| Category | Example |
+|----------|---------|
+| Lex error | unexpected character, unterminated string |
+| Parse error | missing `angle` or `speed`, malformed `launch_from`, unexpected token in a block |
+| Semantic error | using an undeclared variable, referencing an unknown projectile, invalid planet, missing `gravity`/`plot` in a simulation |
+| Runtime error | division by zero |
+
+---
+
+## Sample Code
+
+The following `.px` program uses variables, a 3D projectile, a drag-enabled simulation, a fork comparison, a parameter sweep, and a game block.
+
+```px
+# ProjX sample
+
+let g_earth = 9.8
+let v0 = 70
+
+projectile cannon {
+  angle 45
+  angle_azimuth 30
+  speed v0
+  launch_from (20, 30, 40)
+  mass 5.0
+  drag_coefficient 0.3
+  cross_section 0.05
+}
+
+simulate {
+  gravity g_earth
+  air_resistance true
+  air_density 1.225
+  wind_y 4.0
+  wind_z 5.0
+  plot cannon
+  range cannon
+  max_range cannon
+  max_height cannon
+  check range.cannon() > 200
+}
+
+fork cannon {
+  branch "Earth" {
+    gravity 9.8
+    plot cannon
+  }
+  branch "Moon" {
+    gravity 1.6
+    plot cannon
+  }
+  branch "Mars" {
+    gravity 3.72
+    plot cannon
+  }
+}
+
+for a from 15 to 75 step 15 {
+  projectile sweep {
+    angle a
+    angle_azimuth a
+    speed v0
+  }
+
+  simulate {
+    gravity g_earth
+    plot sweep
+    check range.sweep() > 100
+  }
+}
+
+game {
+  planet earth
+  level 1
+  lives 3
 }
 ```
 
 ---
 
-### 📊 Output (Example 2)
+## Generated Output
 
-#### 🟢 Behavior
+Running `projx` currently produces two outputs:
 
-- Dot notation computes:
-  - `r` → range value (stored, not displayed)
-  - `h` → maximum height  
+- pretty-printed JSON on stdout
+- a standalone HTML file written next to the input file, unless you pass an explicit output path
 
-- Control flow:
-  - `if` updates angle dynamically  
-  - `for` loop computes range multiple times  
-  - `while` loop increments angle until condition is met  
+The generated HTML includes:
 
----
+- tabbed simulation/fork/game sessions
+- a metrics sidebar for query results and checks
+- trajectory plots
+- a 2D/3D toggle for rendered simulations
+- a simple game view for `game` blocks
 
-#### 🌍 Fork Output
+Asset lookup:
 
-- Two simulations are shown:
-  - **Earth (g = 9.8)** → shorter trajectory  
-  - **Moon (g = 1.62)** → longer and higher trajectory  
-
----
-
-#### 🎮 Game Mode
-
-- Simulation runs in interactive mode  
-- Displays:
-  - Selected planet  
-  - Level and lives  
-- Allows user interaction (based on implementation)  
+- planet images are searched under `<directory-of-input>/assets/`
+- if an image is missing, the generated page falls back to procedural visuals
 
 ---
 
-### 📌 Summary
+## Prerequisites
 
-These examples together demonstrate:
-
-- Basic projectile modeling  
-- Analytical queries  
-- Multi-object interaction  
-- Advanced features (bounce, fork, game)  
-- Control flow constructs  
-- Dot notation for reusable computations  
+- [OCaml](https://ocaml.org/) 5.x recommended
+- [opam](https://opam.ocaml.org/)
+- [dune](https://dune.build/) 3.21 or newer
+- [`yojson`](https://opam.ocaml.org/packages/yojson/) for JSON output
 
 ---
 
-📸 *(Add screenshots of output here for better presentation.)*
+## Environment Setup
 
-## 🏗️ Architecture
+### 1. Install opam and OCaml
 
-Based on implementation modules:
+#### Ubuntu / Debian
 
-- `my_utils.ml` → Utility functions  
-- `tokenizer.ml` → Converts input to tokens  
-- `ast.ml` → Abstract Syntax Tree definitions  
-- `parser.ml` → Parses tokens into AST  
-- `pretty.ml` → Pretty printing  
-- `error.ml` → Error handling  
-- `checker.ml` → Semantic analysis  
-- `env.ml` → Environment (variables, state)  
-- `physics.ml` → Physics calculations  
-- `eval.ml` → Execution engine  
-- `canvas.ml` → Visualization  
-- `game.ml` → Game mode logic  
+```bash
+sudo apt update
+sudo apt install opam m4 pkg-config build-essential
+opam init
+eval $(opam env)
+opam switch create 5.1.1
+eval $(opam env)
+```
+
+#### macOS
+
+```bash
+brew install opam
+opam init
+eval $(opam env)
+opam switch create 5.1.1
+eval $(opam env)
+```
+
+### 2. Install project dependencies
+
+```bash
+opam install dune yojson
+```
+
+### 3. Verify installation
+
+```bash
+ocaml -version
+dune --version
+opam --version
+```
 
 ---
 
-## ⚙️ Build & Run
+## Build & Run Guide
 
-### Build
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/username/ProjX.git
+cd ProjX
+```
+
+### 2. Build the project
+
 ```bash
 dune build
 ```
 
-### Run
+### 3. Run the sample program
+
 ```bash
-dune exec ./main.exe
+dune exec projx -- input/queries.px
 ```
 
-### Test
+This will:
+
+1. tokenize the `.px` source
+2. parse it into the AST
+3. run semantic checks
+4. evaluate the program and print JSON to stdout
+5. write `input/queries.html`
+
+### 4. Write to a custom HTML file
+
 ```bash
-dune runtest
+dune exec projx -- input/queries.px output.html
+```
+
+### 5. Open the generated result
+
+Open the generated `.html` file directly in any browser. No local server is required.
+
+---
+
+## Running Tests
+
+The project includes tokenizer and parser test executables under `test/`.
+
+### Run all tests
+
+```bash
+dune test
+```
+
+### What gets tested
+
+- tokenizer keyword recognition
+- identifiers, numbers, operators, and punctuation
+- projectile, simulate, fork, and game parsing
+- arithmetic expressions and precedence
+- loops and conditionals
+- query syntax such as `range.ball()`
+
+---
+
+## Common Issues
+
+- `command not found: dune`
+  - Install dune with `opam install dune`
+
+- `Library "yojson" not found`
+  - Install it with `opam install yojson`
+
+- build artifacts look stale
+  - Run `dune clean` followed by `dune build`
+
+- semantic error about missing `gravity` or `plot`
+  - Ensure every `simulate` block, and every `fork` branch, includes the required statements
+
+- semantic error about `set`
+  - Declare the variable first with `let`
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/username/ProjX.git
+cd ProjX
+opam install dune yojson
+dune build
+dune exec projx -- input/queries.px
+```
+
+Then open `input/queries.html` in your browser.
+
+---
+
+## Compilation Pipeline
+
+```text
+.px source file
+      |
+      v
+Tokenizer (lib/tokenizer.ml)
+  - converts characters into tokens
+  - recognizes keywords, numbers, strings, operators, and comments
+
+      |
+      v
+Parser (lib/parser.ml)
+  - builds the AST
+  - parses projectile blocks, simulate blocks, fork/game blocks,
+    control flow, conditions, and dot queries
+
+      |
+      v
+AST (lib/ast.ml)
+  - represents expressions, conditions, projectiles,
+    simulation statements, branches, and top-level statements
+
+      |
+      v
+Semantic Checker (lib/checker.ml)
+  - validates declaration order
+  - enforces required simulation statements
+  - validates game planets
+
+      |
+      v
+Evaluator + Physics Engine (lib/eval.ml + lib/physics.ml)
+  - computes trajectories, ranges, heights, collisions, and bounces
+
+      |
+      v
+JSON Emitter (lib/json_emit.ml)
+  - produces scenario data for the frontend
+
+      |
+      v
+HTML Generator (bin/main.ml)
+  - injects JSON into a standalone interactive page
+```
+
+### Module Dependency Chain
+
+```text
+tokenizer.ml
+  -> parser.ml
+     -> ast.ml
+  -> checker.ml
+  -> eval.ml
+     -> env.ml
+     -> physics.ml
+  -> json_emit.ml
+  -> bin/main.ml
 ```
 
 ---
 
-## 👨‍💻 Team Contributions
+## Project Structure
 
-The project was developed collaboratively, with each member contributing to different components of the DSL design, implementation, and testing.
-
-| Name | Roll No | Group No | Contribution | Effort (%) |
-|------|--------|---------|-------------|-----------|
-| member1 |  |  |  |  |
-| member2 |  |  |  |  |
-| member3 |  |  |  |  |
-| member4 |  |  |  |  |
-| member5 |  |  |  |  |
----
-
-### 📌 Contribution Details
-
-- The work was divided to ensure **balanced development across components** such as parsing, execution, and visualization.
-- All members collaborated on:
-  - Testing and debugging  
-  - Designing sample programs  
-  - Preparing documentation (README, demo video)  
-
-- Effort distribution reflects **individual contribution to core modules and overall project completion**.
-
----
-
-## 📋 User Survey
-
-### Questions
-
-1. How intuitive is the DSL syntax for beginners?  
-2. Does visualization improve your understanding of projectile motion?  
-3. How easy is it to write programs in this DSL?  
-4. Which feature did you find most useful (plot, collision, range)?  
-5. What additional features would you like to see?  
-6. Did the DSL reduce your effort compared to traditional coding?  
+```text
+.
+├── bin/
+│   ├── dune
+│   └── main.ml           # CLI entry point and HTML template generation
+├── input/
+│   ├── queries.px        # sample ProjX program
+│   ├── queries.html      # generated HTML example
+│   └── assets/           # optional planet images for the generated UI
+├── lib/
+│   ├── ast.ml            # AST definitions
+│   ├── checker.ml        # semantic validation
+│   ├── env.ml            # runtime environment
+│   ├── error.ml          # error helpers/types
+│   ├── eval.ml           # evaluator
+│   ├── json_emit.ml      # JSON generation for the frontend
+│   ├── my_utils.ml       # utility helpers
+│   ├── parser.ml         # recursive-descent parser
+│   ├── physics.ml        # projectile physics/math engine
+│   ├── pretty.ml         # AST pretty-printer
+│   ├── projx.ml          # library module re-exports
+│   ├── tokenizer.ml      # tokenizer / lexer
+│   └── dune
+├── test/
+│   ├── dune
+│   ├── test_ProjX.ml
+│   ├── test_parser.ml
+│   └── test_tokenizer.ml
+├── dune-project
+└── ProjX.opam
+```
 
 ---
 
-### Summary
+## Contributing
 
-- Most users found DSL **easy and intuitive**  
-- Visualization greatly improved conceptual clarity  
-- Users appreciated:
-  - Simplicity  
-  - Immediate feedback  
-- Suggested improvements:
-  - Better error messages  
-  - More examples  
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Run `dune build` and `dune test`.
+5. Open a pull request.
 
----
+If you extend the language, make sure to update:
 
-## 🎥 Demo
-
-👉 Add your YouTube demo link here  
-
----
-
-## 🚀 Features
-
-- Domain-specific abstraction  
-- Built-in physics engine  
-- Visualization support  
-- Analytical queries  
-- Control flow support  
-
----
-
-
-## 📚 Physics Formulas
-
-- Range:  
-  R = (v² sin(2θ)) / g  
-
-- Maximum Height:  
-  H = (v² sin²θ) / (2g)  
-
-- Time of Flight:  
-  T = (2v sinθ) / g  
-
-- Horizontal Velocity:  
-  vx = v cosθ  
-
-- Vertical Velocity:  
-  vy = v sinθ  
-
-- Position Equations:  
-  x = v cosθ * t  
-  y = v sinθ * t - (1/2) g t²  
-
----
-
-## 🏁 Conclusion
-
-ProjX successfully demonstrates how a Domain-Specific Language can simplify complex physical simulations while making them more intuitive and interactive.
-
-It bridges the gap between **theoretical physics and practical visualization**, making learning more engaging and effective.
-
----
+- `lib/tokenizer.ml`
+- `lib/parser.ml`
+- `lib/ast.ml`
+- `lib/checker.ml`
+- `lib/eval.ml`
+- `lib/json_emit.ml`
+- tests in `test/`
+- this `README.md`
