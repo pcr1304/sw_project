@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="None">
+        
+        
+        <link rel="shortcut icon" href="img/favicon.ico">
+        <title>ProjX</title>
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <link href="css/fontawesome.min.css" rel="stylesheet">
+        <link href="css/brands.min.css" rel="stylesheet">
+        <link href="css/solid.min.css" rel="stylesheet">
+        <link href="css/v4-font-face.min.css" rel="stylesheet">
+        <link href="css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body class="homepage">
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href=".">ProjX</a>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#projx-user-guide" class="nav-link">ProjX User Guide</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#1-setup-build" class="nav-link">1. Setup &amp; Build</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-syntax-basics" class="nav-link">2. Syntax Basics</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-projectile-simulation-blocks" class="nav-link">3. Projectile &amp; Simulation Blocks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-dot-queries" class="nav-link">4. Dot Queries</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#5-advanced-features" class="nav-link">5. Advanced Features</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#6-execution-the-compilation-pipeline" class="nav-link">6. Execution &amp; the Compilation Pipeline</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="projx-user-guide">ProjX User Guide</h1>
+<p><strong>GitHub Repository:</strong> <a href="https://github.com/pcr1304/sw_project">https://github.com/pcr1304/sw_project</a></p>
+<p>ProjX is a domain-specific language for modeling projectile motion, running physics simulations, comparing trajectories, and generating interactive browser-based visualizations. With a compact <code>.px</code> syntax, it eliminates the need to stitch together separate calculation, plotting, and presentation tools.</p>
+<h3 id="target-audiences-use-cases">Target Audiences &amp; Use Cases</h3>
+<ul>
+<li>Students and instructors demonstrating kinematics and projectile motion.</li>
+<li>Developers prototyping physics experiments and bounce scenarios.</li>
+<li>Anyone looking to compare identical launches across different gravities visually.</li>
+</ul>
+<hr />
+<h2 id="1-setup-build">1. Setup &amp; Build</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li><strong>OCaml 5.x</strong></li>
+<li><strong>opam</strong> (OCaml package manager)</li>
+<li><strong>dune</strong> (build system)</li>
+<li><strong>yojson</strong> (JSON generation)</li>
+</ul>
+<h3 id="installation">Installation</h3>
+<ol>
+<li>Install OCaml and <code>opam</code>. Then install missing dependencies:
+   <code>bash
+   opam install dune yojson</code></li>
+<li>Build the project:
+   <code>bash
+   dune build</code></li>
+<li>Run the tests (testing lexer/parser integration):
+   <code>bash
+   dune test</code></li>
+</ol>
+<hr />
+<h2 id="2-syntax-basics">2. Syntax Basics</h2>
+<p>A <code>.px</code> script consists of statements grouped via blocks <code>{ ... }</code>. Semicolons are not used. Variables and projectiles must be declared before use.</p>
+<h3 id="comments">Comments</h3>
+<p>Comments use the <code>#</code> character. Anything trailing <code>#</code> is ignored.</p>
+<pre><code class="language-px"># This is a comment
+let g = 9.8
+</code></pre>
+<h3 id="variables-expressions">Variables &amp; Expressions</h3>
+<p>Declare and update numeric variables. You can intermix expressions and parentheses.</p>
+<pre><code class="language-px">let v0 = 25 + 5
+set v0 = v0 * 2
+</code></pre>
+<hr />
+<h2 id="3-projectile-simulation-blocks">3. Projectile &amp; Simulation Blocks</h2>
+<h3 id="projectile-block">Projectile Block</h3>
+<p>Define a projectile setup. <code>angle</code> and <code>speed</code> are strictly required.</p>
+<pre><code class="language-px">projectile cannon {
+  angle 45               # Required (degrees)
+  angle_azimuth 30       # Optional horizontal aim (degrees)
+  speed 70               # Required
+  launch_from (20, 30, 40) # Optional start pos (x, y, z)
+  mass 5.0               # Optional (for drag calculation)
+  drag_coefficient 0.3   # Optional (for drag calculation)
+  cross_section 0.05     # Optional (for drag calculation)
+}
+</code></pre>
+<h3 id="simulate-block">Simulate Block</h3>
+<p>A <code>simulate</code> block executes a physics scenario and generates the plot.
+<strong>Rule:</strong> It must contain exactly one <code>gravity</code> and at least one <code>plot</code> statement.</p>
+<pre><code class="language-px">simulate {
+  gravity 9.8
+  air_resistance true
+  air_density 1.225
+  wind_y 4.0      # Optional X/Y/Z wind influence
+
+  plot cannon     # Draw the trajectory
+
+  # Query Metrics
+  range cannon
+  max_height cannon
+  max_range cannon
+  max_rectangle cannon
+
+  # Dynamic checks
+  check range.cannon() &gt; 200
+  collide cannon sweep
+}
+</code></pre>
+<hr />
+<h2 id="4-dot-queries">4. Dot Queries</h2>
+<p>Dot queries allow fetching derived values dynamically in conditional checks or variable assignments.</p>
+<ul>
+<li><strong><code>range.ball()</code></strong>: Range of the projectile</li>
+<li><strong><code>max_height.ball()</code></strong>: Max height achieved</li>
+<li><strong><code>max_range.ball()</code></strong>: Theoretical max range</li>
+<li><strong><code>max_rectangle.ball()</code></strong>: Maximum rectangle area beneath the arc</li>
+<li><strong><code>min_vel.ball(x, h)</code></strong>: Minimum velocity needed to clear a target tower</li>
+<li><strong><code>collide.(p1, p2)</code></strong>: Returns 1 if collision occurs, 0 otherwise</li>
+<li><strong><code>min_dist.(p1, p2)</code></strong>: Reports the minimum distance between two arcs</li>
+</ul>
+<p>Example in context:</p>
+<pre><code class="language-px">let r = range.cannon()
+if range.cannon() &gt; 100 and max_height.cannon() &gt; 20 {
+  let success = 1
+}
+</code></pre>
+<hr />
+<h2 id="5-advanced-features">5. Advanced Features</h2>
+<h3 id="game-mode">Game Mode</h3>
+<p>Swap a standard simulation for an interactive web game:</p>
+<pre><code class="language-px">game {
+  planet earth  # Valid: earth, moon, mars, jupiter, sun
+  level 1
+  lives 3
+}
+</code></pre>
+<h3 id="comparing-scenarios-forking">Comparing Scenarios (Forking)</h3>
+<p><code>fork</code> creates comparative simulation branches for an existing projectile. Each branch is effectively a simulation block requiring its own <code>gravity</code> and <code>plot</code>.</p>
+<pre><code class="language-px">fork cannon {
+  branch &quot;Earth&quot; {
+    gravity 9.8
+    plot cannon
+  }
+  branch &quot;Moon&quot; {
+    gravity 1.6
+    plot cannon
+  }
+}
+</code></pre>
+<h3 id="control-flow">Control Flow</h3>
+<p>Loops (<code>for</code>, <code>repeat</code>, <code>while</code>) and conditionals (<code>if/else</code>) are built-in.</p>
+<pre><code class="language-px">for a from 15 to 75 step 15 {
+  projectile sweep { angle a  speed 70 }
+  simulate { gravity 9.8  plot sweep }
+}
+</code></pre>
+<hr />
+<h2 id="6-execution-the-compilation-pipeline">6. Execution &amp; the Compilation Pipeline</h2>
+<p>When a <code>.px</code> program executes, it follows a systematic pipeline from raw input to generated graphical view:</p>
+<pre><code class="language-mermaid">flowchart TD
+    A([.px Source File]) --&gt; B(Tokenizer: lib/tokenizer.ml)
+    B --&gt; C(Parser: lib/parser.ml)
+    C --&gt; D(Semantic Checker: lib/checker.ml)
+    D --&gt; E(Evaluator &amp; Physics: lib/eval.ml &amp; lib/physics.ml)
+    E --&gt; F(JSON Emitter: lib/json_emit.ml)
+    F --&gt; G(HTML Generator: bin/main.ml)
+    G --&gt; H([HTML Interactive UI])
+</code></pre>
+<ul>
+<li><strong>Tokenizer</strong> (<code>lib/tokenizer.ml</code>): Converts raw text strings into distinct linguistic tokens.</li>
+<li><strong>Parser</strong> (<code>lib/parser.ml</code>): Composes the sequences of tokens into an Abstract Syntax Tree (AST).</li>
+<li><strong>Semantic Checker</strong> (<code>lib/checker.ml</code>): Validates variable scopes, projectile dependencies, and simulation rules.</li>
+<li><strong>Evaluator &amp; Physics</strong> (<code>lib/eval.ml</code>, <code>lib/physics.ml</code>): Evaluates queries, calculates kinematics, and processes interactions.</li>
+<li><strong>JSON Emitter</strong> (<code>lib/json_emit.ml</code>): Bundles output metrics and positional data into a structured format for rendering.</li>
+<li><strong>HTML Generator</strong> (<code>bin/main.ml</code>): Automates rendering all JSON properties neatly into a standalone interactive web application.</li>
+</ul>
+<p><strong>Run your <code>.px</code> file:</strong></p>
+<pre><code class="language-bash">dune exec projx -- input/queries.px
+</code></pre>
+<p><em>Outputs JSON to the console and generates an interactive web interface (e.g., <code>input/queries.html</code>). Open the <code>.html</code> file inside any web browser for visualization.</em></p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = ".",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="js/base.js"></script>
+        <script src="search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
+
+<!--
+MkDocs version : 1.6.1
+Build Date UTC : 2026-04-13 16:48:04.297532+00:00
+-->
