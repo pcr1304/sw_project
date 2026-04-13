@@ -18,21 +18,20 @@
 
 open Projx
 
-let explode s =
-  List.init (String.length s) (String.get s)
+let explode s = List.init (String.length s) (String.get s)
 
 (* ── base64 encoder ─────────────────────────────────────────────── *)
 let base64_table =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 let base64_encode (bytes : bytes) : string =
-  let n    = Bytes.length bytes in
-  let buf  = Buffer.create ((n / 3 + 1) * 4) in
-  let i    = ref 0 in
+  let n = Bytes.length bytes in
+  let buf = Buffer.create (((n / 3) + 1) * 4) in
+  let i = ref 0 in
   while !i + 2 < n do
-    let b0 = Char.code (Bytes.get bytes !i)     in
-    let b1 = Char.code (Bytes.get bytes (!i+1)) in
-    let b2 = Char.code (Bytes.get bytes (!i+2)) in
+    let b0 = Char.code (Bytes.get bytes !i) in
+    let b1 = Char.code (Bytes.get bytes (!i + 1)) in
+    let b2 = Char.code (Bytes.get bytes (!i + 2)) in
     Buffer.add_char buf base64_table.[b0 lsr 2];
     Buffer.add_char buf base64_table.[((b0 land 3) lsl 4) lor (b1 lsr 4)];
     Buffer.add_char buf base64_table.[((b1 land 15) lsl 2) lor (b2 lsr 6)];
@@ -42,14 +41,15 @@ let base64_encode (bytes : bytes) : string =
   if !i + 1 = n then begin
     let b0 = Char.code (Bytes.get bytes !i) in
     Buffer.add_char buf base64_table.[b0 lsr 2];
-    Buffer.add_char buf base64_table.[((b0 land 3) lsl 4)];
+    Buffer.add_char buf base64_table.[(b0 land 3) lsl 4];
     Buffer.add_string buf "=="
-  end else if !i + 2 = n then begin
-    let b0 = Char.code (Bytes.get bytes !i)     in
-    let b1 = Char.code (Bytes.get bytes (!i+1)) in
+  end
+  else if !i + 2 = n then begin
+    let b0 = Char.code (Bytes.get bytes !i) in
+    let b1 = Char.code (Bytes.get bytes (!i + 1)) in
     Buffer.add_char buf base64_table.[b0 lsr 2];
     Buffer.add_char buf base64_table.[((b0 land 3) lsl 4) lor (b1 lsr 4)];
-    Buffer.add_char buf base64_table.[((b1 land 15) lsl 2)];
+    Buffer.add_char buf base64_table.[(b1 land 15) lsl 2];
     Buffer.add_char buf '='
   end;
   Buffer.contents buf
@@ -58,7 +58,7 @@ let base64_encode (bytes : bytes) : string =
 let read_bytes path =
   match open_in_bin path with
   | ic ->
-      let n   = in_channel_length ic in
+      let n = in_channel_length ic in
       let buf = Bytes.create n in
       really_input ic buf 0 n;
       close_in ic;
@@ -69,7 +69,8 @@ let read_bytes path =
 let data_uri mime path =
   match read_bytes path with
   | None ->
-      Printf.eprintf "[warn] image not found: %s  (game will use procedural fallback)\n" path;
+      Printf.eprintf
+        "[warn] image not found: %s  (game will use procedural fallback)\n" path;
       "null"
   | Some bytes ->
       Printf.eprintf "[info] loaded image: %s\n" path;
@@ -77,15 +78,16 @@ let data_uri mime path =
 
 (* ── simple string replace (no external libs) ───────────────────── *)
 let replace_all needle replacement haystack =
-  let buf  = Buffer.create (String.length haystack) in
+  let buf = Buffer.create (String.length haystack) in
   let nlen = String.length needle in
   let hlen = String.length haystack in
-  let i    = ref 0 in
+  let i = ref 0 in
   while !i <= hlen - nlen do
     if String.sub haystack !i nlen = needle then begin
       Buffer.add_string buf replacement;
       i := !i + nlen
-    end else begin
+    end
+    else begin
       Buffer.add_char buf haystack.[!i];
       i := !i + 1
     end
@@ -106,7 +108,8 @@ let replace_all needle replacement haystack =
      __IMG_MOON__       <- data-URI or null
      __IMG_EARTH__      <- data-URI or null
    ══════════════════════════════════════════════════════════════════ *)
-let html_template = {html|<!DOCTYPE html>
+let html_template =
+  {html|<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1586,50 +1589,64 @@ let () =
   (* pipeline *)
   let src =
     try My_utils.read_file input_file
-    with Sys_error msg -> Printf.eprintf "Cannot open: %s\n" msg; exit 1
+    with Sys_error msg ->
+      Printf.eprintf "Cannot open: %s\n" msg;
+      exit 1
   in
   let tokens =
     try Tokenizer.tokenize (explode src)
-    with Failure msg -> Printf.eprintf "Lex error: %s\n" msg; exit 1
+    with Failure msg ->
+      Printf.eprintf "Lex error: %s\n" msg;
+      exit 1
   in
   let program =
     try Parser.parse tokens
-    with Failure msg -> Printf.eprintf "Parse error: %s\n" msg; exit 1
+    with Failure msg ->
+      Printf.eprintf "Parse error: %s\n" msg;
+      exit 1
   in
   (try Checker.check program
-   with Failure msg -> Printf.eprintf "Semantic error: %s\n" msg; exit 1);
+   with Failure msg ->
+     Printf.eprintf "Semantic error: %s\n" msg;
+     exit 1);
 
   (* original evaluator — stdout unchanged *)
   (try Eval.eval_program program
-   with Failure msg -> Printf.eprintf "Runtime error: %s\n" msg; exit 1);
+   with Failure msg ->
+     Printf.eprintf "Runtime error: %s\n" msg;
+     exit 1);
 
   (* JSON *)
   let json =
     try Projx.Json_emit.emit_json program
-    with Failure msg -> Printf.eprintf "JSON error: %s\n" msg; exit 1
+    with Failure msg ->
+      Printf.eprintf "JSON error: %s\n" msg;
+      exit 1
   in
 
   (* base64 images *)
-  let img_mars    = img "mars.png"     "image/png"  in
-  let img_jupiter = img "jupiter.png"  "image/png"  in
-  let img_saturn  = img "saturn.png"   "image/png"  in
-  let img_moon    = img "planet1.jpeg" "image/jpeg" in
-  let img_earth   = img "bgearth.jpeg" "image/jpeg" in
+  let img_mars = img "mars.png" "image/png" in
+  let img_jupiter = img "jupiter.png" "image/png" in
+  let img_saturn = img "saturn.png" "image/png" in
+  let img_moon = img "planet1.jpeg" "image/jpeg" in
+  let img_earth = img "bgearth.jpeg" "image/jpeg" in
 
   let html =
     html_template
-    |> replace_all "__PROJX_DATA__"  json
-    |> replace_all "__IMG_MARS__"    img_mars
+    |> replace_all "__PROJX_DATA__" json
+    |> replace_all "__IMG_MARS__" img_mars
     |> replace_all "__IMG_JUPITER__" img_jupiter
-    |> replace_all "__IMG_SATURN__"  img_saturn
-    |> replace_all "__IMG_MOON__"    img_moon
-    |> replace_all "__IMG_EARTH__"   img_earth
+    |> replace_all "__IMG_SATURN__" img_saturn
+    |> replace_all "__IMG_MOON__" img_moon
+    |> replace_all "__IMG_EARTH__" img_earth
   in
 
   (try
-    Out_channel.with_open_text html_out (fun oc ->
-      Out_channel.output_string oc html)
-   with Sys_error msg -> Printf.eprintf "Write error: %s\n" msg; exit 1);
+     Out_channel.with_open_text html_out (fun oc ->
+         Out_channel.output_string oc html)
+   with Sys_error msg ->
+     Printf.eprintf "Write error: %s\n" msg;
+     exit 1);
 
   Printf.printf "\n[ProjX] Written: %s\n" html_out;
   Printf.printf "[ProjX] Open in any browser — no server needed.\n"
