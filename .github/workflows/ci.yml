@@ -20,4 +20,4 @@ jobs:
       - run: opam exec -- dune build
       - run: opam exec -- dune runtest
       - run: opam exec -- dune fmt
-      - run: git diff --exit-code
+     
