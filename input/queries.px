@@ -1,0 +1,80 @@
+# ProjX sample — basic ballistics study
+
+let g_earth  = 9.8
+let g_moon   = 1.6
+let v0       = 70
+
+# Top-level projectile
+projectile cannon {
+    angle           45
+    angle_azimuth   30
+    speed           v0
+    launch_from (20, 30, 40)
+    mass   5.0
+    drag_coefficient 0.3
+    cross_section    0.05
+}
+
+# Simulate on Earth with drag
+simulate {
+    gravity        g_earth
+    air_resistance true
+    air_density    1.225
+    wind_y      4.0
+    wind_z    5.0
+    
+
+    plot      cannon
+    range     cannon
+    max_range cannon
+    max_height cannon
+    check range.cannon() > 200
+}
+
+# Compare Earth vs Moon vs Mars trajectories
+fork cannon {
+    branch "Earth" {
+        gravity 9.8
+        plot cannon
+    }
+    branch "Moon" {
+        gravity 1.6
+        plot cannon
+    }
+    branch "Mars" {
+        gravity 3.72
+        plot cannon
+    }
+}
+
+# Angle sweep — each elevation also fans out in azimuth
+for a from 15 to 75 step 15 {
+    projectile sweep {
+        angle         a
+        angle_azimuth a
+        speed         v0
+    }
+    simulate {
+        gravity g_earth
+        plot sweep
+        check range.sweep() > 100
+    }
+}
+
+# Bounce simulation
+simulate {
+    gravity 9.8
+    projectile bouncer {
+        angle 40
+        speed 25
+    }
+    plot bouncer
+    bounce bouncer times  4  restitution 0.7     # 4 bounces, restitution 0.7
+}
+
+# Game level
+game {
+    planet earth
+    level  1
+    lives  3
+}
