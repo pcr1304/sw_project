@@ -228,12 +228,15 @@ let rec tokenize = function
       tokenize rest
 
   (* single-line comment *)
-  | '#' :: rest ->
-      let rec skip = function
-        | [] -> tokenize []
-        | '\n' :: r -> tokenize r
-        | _ :: r    -> skip r
-      in skip rest
+ (* single-line comments: # or // *)
+| '#' :: rest
+| '/' :: '/' :: rest ->
+    let rec skip = function
+      | [] -> tokenize []
+      | '\n' :: r -> tokenize r
+      | _ :: r -> skip r
+    in
+    skip rest
 
   (* string literal *)
   | '"' :: rest ->
