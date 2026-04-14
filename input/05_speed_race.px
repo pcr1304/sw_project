@@ -1,0 +1,18 @@
+# Speed Race
+# Three identical cannons aimed at 45 degrees but loaded with
+# increasingly powerful charges. Watch how range scales with speed.
+
+for v from 20 to 60 step 20 {
+  simulate {
+    gravity 9.8
+    projectile racer {
+      angle 45
+      speed v
+      launch_from (0, 0, 0)
+    }
+    plot racer
+    range racer
+    max_range racer
+    max_height racer
+  }
+}

@@ -1,0 +1,17 @@
+# Tower Sniper
+# A sniper must clear a 25-metre wall sitting 60 m away.
+# Reports the minimum speed needed and checks whether the shot makes it.
+
+simulate {
+  gravity 9.8
+  projectile sniper {
+    angle 55
+    speed 48
+    launch_from (0, 0, 0)
+  }
+  plot sniper
+  min_vel sniper tower (60, 25)
+  max_height sniper
+  range sniper
+  check max_height.sniper() > 25
+}

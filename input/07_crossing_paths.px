@@ -1,0 +1,22 @@
+# Crossing Paths
+# Alpha launches from the origin, Beta from nearby with a steeper angle.
+# We measure their closest approach and verify the relative heights.
+
+simulate {
+  gravity 9.8
+  projectile alpha {
+    angle 30
+    speed 65
+    launch_from (0, 0, 0)
+  }
+  projectile beta {
+    angle 60
+    speed 65
+    launch_from (0, 0, 0)
+  }
+  plot alpha
+  plot beta
+  collide alpha beta
+  min_dist alpha beta
+  check max_height.alpha() < max_height.beta()
+}

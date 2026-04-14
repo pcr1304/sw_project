@@ -1,0 +1,9 @@
+# Red Planet Assault
+# Target-practice mode set on Mars.
+# Gravity is 3.72 m/s^2 — shots fly much farther than on Earth.
+
+game {
+  planet mars
+  level 4
+  lives 5
+}

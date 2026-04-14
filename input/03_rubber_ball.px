@@ -1,0 +1,16 @@
+# Rubber Ball
+# A highly elastic ball launched and allowed to bounce five times.
+# Restitution 0.85 means it keeps 85% of its energy each landing.
+
+simulate {
+  gravity 9.8
+  projectile ball {
+    angle 50
+    speed 35
+    launch_from (0, 0, 0)
+  }
+  plot ball
+  bounce ball times 5 restitution 0.85
+  range ball
+  max_height ball
+}

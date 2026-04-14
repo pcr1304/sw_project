@@ -1,0 +1,42 @@
+# Solar System
+# The same probe launched from every planet in the solar system.
+# Each fork branch applies a different gravitational field.
+
+projectile probe {
+  angle 45
+  speed 70
+  launch_from (0, 0, 0)
+}
+
+fork probe {
+  branch "Earth (g=9.8)" {
+    gravity 9.8
+    plot probe
+    max_height probe
+    range probe
+  }
+  branch "Moon (g=1.62)" {
+    gravity 1.62
+    plot probe
+    max_height probe
+    range probe
+  }
+  branch "Mars (g=3.72)" {
+    gravity 3.72
+    plot probe
+    max_height probe
+    range probe
+  }
+  branch "Jupiter (g=24.79)" {
+    gravity 24.79
+    plot probe
+    max_height probe
+    range probe
+  }
+  branch "Sun (g=274)" {
+    gravity 274
+    plot probe
+    max_height probe
+    range probe
+  }
+}

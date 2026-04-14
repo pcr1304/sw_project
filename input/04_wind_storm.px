@@ -1,0 +1,39 @@
+# Wind Storm
+# Two identical shots: the first in calm air, the second into a 12 m/s headwind.
+# Air drag is off for the first and fully enabled for the second.
+
+simulate {
+  gravity 9.8
+  air_resistance false
+  projectile calm {
+    angle 45
+    speed 55
+    mass 0.5
+    drag_coefficient 0.47
+    cross_section 0.04
+    launch_from (0, 0, 0)
+  }
+  plot calm
+  range calm
+  max_height calm
+}
+
+simulate {
+  gravity 9.8
+  air_resistance true
+  air_density 1.225
+  wind_x -12
+  wind_y 0
+  projectile stormy {
+    angle 45
+    speed 55
+    mass 0.5
+    drag_coefficient 0.47
+    cross_section 0.04
+    launch_from (0, 0, 0)
+  }
+  plot stormy
+  range stormy
+  max_height stormy
+  check range.stormy() > 80
+}
