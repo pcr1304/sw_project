@@ -386,7 +386,4 @@ What makes ProjX stand out:
 
 ---
 
-## Notes
 
-- The project layout in this README matches the top-level repository structure shown in your repo.
-- The included `ProjX.opam` metadata is still minimal, so the installation steps above use the concrete libraries referenced by the Dune files.
