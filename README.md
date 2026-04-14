@@ -526,9 +526,26 @@ game {
 
 ---
 
-## Generated Output
+## Generated Output(In input folder with HTML extension)
 
-Running `projx` currently produces these outputs:
+
+Running `projx` currently produces two outputs:
+
+- pretty-printed JSON on stdout
+- a standalone HTML file written next to the input file, unless you pass an explicit output path
+
+The generated HTML includes:
+
+- tabbed simulation/fork/game sessions
+- a metrics sidebar for query results and checks
+- trajectory plots
+- a 2D/3D toggle for rendered simulations
+- a simple game view for `game` blocks
+
+Asset lookup:
+
+- planet images are searched under `<directory-of-input>/assets/`
+- if an image is missing, the generated page falls back to procedural visuals
 
 
 
