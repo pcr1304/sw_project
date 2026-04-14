@@ -1,0 +1,18 @@
+# 3D Azimuth Spread
+# Same elevation angle, rotating the horizontal aim every 30 degrees.
+# Switch to 3D view to see the trajectories fan out across the plane.
+
+for az from 0 to 60 step 30 {
+  simulate {
+    gravity 9.8
+    projectile bolt {
+      angle 45
+      angle_azimuth az
+      speed 60
+      launch_from (0, 0, 0)
+    }
+    plot bolt
+    range bolt
+    max_height bolt
+  }
+}

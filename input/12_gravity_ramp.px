@@ -1,0 +1,19 @@
+# Gravity Ramp
+# A while loop steps gravity from 4 up to 16 m/s^2 in jumps of 4.
+# Watch the trajectories shrink as the planet gets denser.
+
+let g = 4
+while g <= 16 {
+  simulate {
+    gravity g
+    projectile shell {
+      angle 45
+      speed 60
+      launch_from (0, 0, 0)
+    }
+    plot shell
+    range shell
+    max_height shell
+  }
+  set g = g + 4
+}

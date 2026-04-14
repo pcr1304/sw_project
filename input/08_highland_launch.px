@@ -1,0 +1,17 @@
+# Highland Launch
+# The same cannonball fired from sea level, a plateau, and a mountain top.
+# Extra altitude at launch translates directly into extra range on landing.
+
+for h from 0 to 40 step 20 {
+  simulate {
+    gravity 9.8
+    projectile cannonball {
+      angle 35
+      speed 55
+      launch_from (0, h, 0)
+    }
+    plot cannonball
+    range cannonball
+    max_height cannonball
+  }
+}

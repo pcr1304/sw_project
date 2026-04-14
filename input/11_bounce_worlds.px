@@ -1,0 +1,26 @@
+# Bounce on Different Worlds
+# The same rubber ball bounces four times on Earth and then on the Moon.
+# Lower gravity means higher, slower arcs and much longer travel distance.
+
+projectile bouncer {
+  angle 45
+  speed 40
+  launch_from (0, 0, 0)
+}
+
+fork bouncer {
+  branch "Earth (g=9.8)" {
+    gravity 9.8
+    plot bouncer
+    bounce bouncer times 4 restitution 0.72
+    range bouncer
+    max_height bouncer
+  }
+  branch "Moon (g=1.62)" {
+    gravity 1.62
+    plot bouncer
+    bounce bouncer times 4 restitution 0.72
+    range bouncer
+    max_height bouncer
+  }
+}

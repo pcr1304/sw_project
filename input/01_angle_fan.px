@@ -1,0 +1,17 @@
+# Angle Fan
+# A single arrow fired at four different elevations.
+# The for loop creates one simulate block per angle.
+
+for i from 20 to 80 step 20 {
+  simulate {
+    gravity 9.8
+    projectile arrow {
+      angle i
+      speed 55
+      launch_from (0, 0, 0)
+    }
+    plot arrow
+    max_height arrow
+    range arrow
+  }
+}

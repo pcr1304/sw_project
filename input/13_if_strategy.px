@@ -1,0 +1,33 @@
+# Strategic Choice
+# A flag controls which firing strategy is used.
+# Set prefer_height to 0 to switch to the flat, far-reaching shot.
+
+let prefer_height = 1
+
+if prefer_height > 0 {
+  simulate {
+    gravity 9.8
+    projectile lofted {
+      angle 75
+      speed 50
+      launch_from (0, 0, 0)
+    }
+    plot lofted
+    max_height lofted
+    range lofted
+    check max_height.lofted() > 80
+  }
+} else {
+  simulate {
+    gravity 9.8
+    projectile flat {
+      angle 15
+      speed 50
+      launch_from (0, 0, 0)
+    }
+    plot flat
+    range flat
+    max_height flat
+    check range.flat() > 60
+  }
+}
