@@ -6,3 +6,6 @@
  (name test_parser)
  (libraries projx ounit2))
 
+(test
+ (name test_checker)
+ (libraries projx ounit2 str))
