@@ -1,795 +1,392 @@
+# Group - 34
+**Software Engineering Project - Group 34**
+
+[![OCaml](https://img.shields.io/badge/OCaml-4.14%2B-f66a0a?style=flat-square&logo=ocaml)](https://ocaml.org/)
+[![Dune](https://img.shields.io/badge/Dune-Build_System-8c52ff?style=flat-square)](https://dune.build/)
+[![HTML](https://img.shields.io/badge/Output-Interactive_HTML-e34f26?style=flat-square&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![JavaScript](https://img.shields.io/badge/Frontend-JavaScript-f7df1e?style=flat-square&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+
 # ProjX
 
-ProjX is a domain-specific language for modeling projectile motion, running physics simulations, comparing trajectories across environments, and generating an interactive browser-based visualization. It lets users describe ballistics scenarios with a compact `.px` syntax instead of writing low-level physics or rendering code.
+**ProjX** is a domain-specific language (DSL) for modeling, analyzing, and visualizing projectile motion through clean, programmable scripts.
 
-The current implementation supports 2D/3D projectile setup, drag and wind configuration, collision and distance queries, bounce studies, branch-based scenario comparison, and a simple planetary game mode. Running a ProjX program produces JSON on stdout and a standalone HTML simulation dashboard you can open directly in a browser.
+Instead of manually deriving every trajectory, comparing environments by hand, or wiring together separate plotting tools, users can define projectiles, gravity, drag, wind, collisions, bounce behavior, and even game settings inside a compact `.px` program. ProjX then compiles that program into an interactive HTML lab that can be opened directly in the browser.
 
----
+## Introduction
 
-## Table of Contents
+ProjX is designed for students, educators, and physics enthusiasts who want more than a calculator and less friction than a full game engine. It combines a small programming language with projectile-motion physics so that users can:
 
-- [Motivation](#motivation)
-- [Target Users](#target-users)
-- [Keywords & Lexical Specification](#keywords--lexical-specification)
-  - [Program Structure](#program-structure)
-  - [Allowed Characters](#allowed-characters)
-  - [Delimiters](#delimiters)
-  - [Operators](#operators)
-  - [Comments](#comments)
-  - [Identifiers](#identifiers)
-  - [Literals & Values](#literals--values)
-  - [Variables & Expressions](#variables--expressions)
-  - [Projectile Keywords](#projectile-keywords)
-  - [Simulation Keywords](#simulation-keywords)
-  - [Fork Keywords](#fork-keywords)
-  - [Game Keywords](#game-keywords)
-  - [Control Flow Keywords](#control-flow-keywords)
-  - [Dot Queries](#dot-queries)
-  - [Semantic Rules](#semantic-rules)
-  - [Errors](#errors)
-- [Sample Code](#sample-code)
-- [Generated Output](#generated-output)
-- [Prerequisites](#prerequisites)
-- [Environment Setup](#environment-setup)
-- [Build & Run Guide](#build--run-guide)
-- [Running Tests](#running-tests)
-- [Common Issues](#common-issues)
-- [Quick Start](#quick-start)
-- [Compilation Pipeline](#compilation-pipeline)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
+- define reusable projectile setups
+- run analytical and numerical experiments
+- compare multiple gravitational environments
+- explore game-style planetary levels
+- generate visual output from a single source file
 
----
+The compiler is implemented in **OCaml**, while the final output is rendered as an **interactive HTML/JavaScript experience**.
 
-## Motivation
+### Motivation
 
-Physics simulations are often split across multiple tools: one for calculations, one for plots, and another for presentation. ProjX brings those steps together in one small language. You write a scenario once, and the compiler handles tokenizing, parsing, semantic checking, evaluation, JSON generation, and HTML visualization for you.
+Traditional physics tools are often split between formulas, plotting utilities, and UI-heavy simulators. ProjX was built to bring these together in one place:
 
-ProjX is especially useful when you want to:
+- a readable DSL for writing experiments quickly
+- built-in projectile-motion queries such as range and max height
+- browser-ready visualization for demos, labs, and assignments
+- a workflow that supports both classroom learning and playful exploration
 
-- prototype projectile-motion scenarios quickly
-- compare the same launch across different gravity settings
-- inspect range, peak height, collisions, and bounce behavior
-- generate a visual artifact without building a separate frontend
+### Key Features
 
-## Target Users
+- **Physics-first modeling:** Supports projectile motion, gravity changes, bounce behavior, collisions, minimum-distance checks, maximum rectangle queries, and minimum launch velocity estimation.
+- **Air resistance and wind:** Includes `air_resistance`, `air_density`, `wind_x`, and `wind_y` for more realistic simulations.
+- **Familiar control flow:** Supports `let`, `set`, `for`, `repeat`, `while`, and `if/else`.
+- **Planet-aware game mode:** Lets users configure levels with `planet`, `level`, and `lives`.
+- **Fork-based comparison:** Compare the same projectile across multiple branches such as Earth, Moon, Mars, and Jupiter.
+- **Interactive output:** Compiles `.px` scripts into browser-friendly `.html` files with visual trajectory output.
+- **Static semantic checks:** Detects undeclared variables, invalid projectile definitions, bad restitution values, missing `gravity`, and other usage errors before output is generated.
 
-- Students learning projectile motion, kinematics, and simulation
-- Developers building small physics demos or visual experiments
-- Instructors who want readable scenario files for teaching
-- Anyone interested in turning a concise physics script into an interactive HTML output
+### Core Language Blocks in ProjX
+
+ProjX includes several high-level blocks that define the overall structure of a program:
+
+- **`projectile { ... }`** for defining launch angle, speed, origin, and drag-related properties
+- **`simulate { ... }`** for plotting and querying projectile behavior
+- **`fork { ... }`** for side-by-side environment comparison
+- **`game { ... }`** for game-inspired planetary scenarios
+- **`for`, `repeat`, `while`, `if`, and `else`** for programmable control flow
+
+### Internal Technical Documentation
+
+The implementation details for each compiler stage are available directly in the source:
+
+- [Tokenizer / Lexer](lib/tokenizer.ml)
+- [Parser and AST construction](lib/parser.ml)
+- [Semantic checker](lib/checker.ml)
+- [Physics engine](lib/physics.ml)
+- [JSON/HTML emission](lib/json_emit.ml)
 
 ---
 
-## Keywords & Lexical Specification
+## The Architecture
 
-This section describes the current ProjX syntax implemented by `tokenizer.ml`, `parser.ml`, `checker.ml`, and `eval.ml`.
+### Project Directory System
 
-### Program Structure
+```text
+.
+├── .github/
+│   └── workflows/             # GitHub Actions workflows
+├── bin/
+│   ├── dune                   # Build config for the executable
+│   └── main.ml                # Entry point (Compiles .px into .html)
+├── input/
+│   ├── queries.px             # Sample ProjX program
+│   ├── queries.html           # Example generated output
+│   └── *.png / *.jpeg         # Assets for planet-based game mode
+├── lib/
+│   ├── ast.ml                 # Abstract syntax tree definitions
+│   ├── checker.ml             # Semantic checks and validation rules
+│   ├── env.ml                 # Runtime/compiler environment
+│   ├── error.ml               # Error record definitions
+│   ├── eval.ml                # Expression and statement evaluator
+│   ├── json_emit.ml           # JSON generation for browser output
+│   ├── my_utils.ml            # Utility helpers
+│   ├── parser.ml              # Recursive-descent parser
+│   ├── physics.ml             # Projectile-motion and drag calculations
+│   ├── pretty.ml              # Pretty-print helpers
+│   ├── projx.ml               # Library entry module
+│   └── tokenizer.ml           # Lexer/tokenizer
+├── test/
+│   ├── dune                   # Test config
+│   ├── test_parser.ml         # Parser tests
+│   ├── test_ProjX.ml          # Project-level tests
+│   └── test_tokenizer.ml      # Tokenizer tests
+├── .gitignore
+├── .ocamlformat
+├── ProjX.opam
+├── README.md
+└── dune-project
+```
 
-A `.px` file is a sequence of top-level statements. The parser currently accepts these statement forms:
+---
 
-- `projectile`
-- `simulate`
-- `fork`
-- `game`
-- `let`
-- `set`
-- `for`
-- `repeat`
-- `while`
-- `if ... else`
+## Example Code
 
-Example:
+This example defines a projectile, simulates it with drag and wind, and reports useful projectile metrics.
 
 ```px
-let g = 9.8
-
-projectile ball {
+projectile rocket {
   angle 45
-  speed 30
+  speed 50
+  mass 0.5
+  drag_coefficient 0.47
+  cross_section 0.01
+  launch_from (0, 0, 0)
 }
 
-simulate {
-  gravity g
-  plot ball
-}
-```
-
-Notes:
-
-- There is no required top-level ordering, but variables and projectiles must be declared before use.
-- `projectile` blocks can appear both at top level and inside `simulate` blocks.
-- Blocks are delimited with `{ ... }`; statements are separated by whitespace and block boundaries, not semicolons.
-
-### Allowed Characters
-
-| Category | Characters | Description |
-|----------|------------|-------------|
-| Letters | `a-z`, `A-Z` | Used in identifiers and keywords |
-| Digits | `0-9` | Used in integer and floating-point literals |
-| Underscore | `_` | Allowed in identifiers and keywords such as `launch_from` |
-| Whitespace | space, tab, newline, carriage return | Used to separate tokens |
-| Quotes | `"` | Used for branch labels |
-| Symbols | `{ } ( ) , . = + - * / < > ! #` | Used for blocks, operators, dot queries, and comments |
-
-### Delimiters
-
-| Symbol | Description |
-|--------|-------------|
-| `{ }` | Define blocks such as `projectile`, `simulate`, `fork`, `game`, and control-flow bodies |
-| `( )` | Used in `launch_from`, `tower (...)`, and dot-query arguments |
-| `,` | Separates tuple/query arguments |
-| `.` | Introduces a dot query such as `range.ball()` |
-| `"` | Wraps branch labels |
-
-### Operators
-
-| Type | Operators | Description |
-|------|-----------|-------------|
-| Arithmetic | `+ - * /` | Numeric expressions |
-| Comparison | `< > <= >= == !=` | Used inside conditions |
-| Logical | `and or not` | Used in `if`, `while`, and `check` conditions |
-| Assignment | `=` | Used in `let` and `set` |
-
-#### Expression Precedence
-
-| Level | Operators |
-|-------|-----------|
-| 1 | Unary `+`, unary `-` |
-| 2 | `*`, `/` |
-| 3 | `+`, `-` |
-| 4 | `<`, `>`, `<=`, `>=`, `==`, `!=` |
-| 5 | `not` |
-| 6 | `and`, `or` |
-
-Notes:
-
-- Arithmetic operators are left-associative.
-- In the current parser, `and` and `or` are parsed left-to-right at the same precedence level.
-- Parentheses are supported inside arithmetic expressions such as `(a + b) * 2`.
-
-### Comments
-
-| Syntax | Description |
-|--------|-------------|
-| `# comment` | Everything from `#` to the end of the line is ignored |
-
-Example:
-
-```px
-# Earth gravity
-let g = 9.8
-```
-
-### Identifiers
-
-| Rule | Description |
-|------|-------------|
-| Start | Must begin with a letter or `_` |
-| Rest | May contain letters, digits, or `_` |
-| Restriction | Cannot be one of the reserved keywords listed below |
-
-Examples:
-
-- Valid: `ball`, `sweep1`, `_temp`, `drag_profile`
-- Invalid: `3ball`, `launch-from`
-
-### Literals & Values
-
-| Kind | Examples | Notes |
-|------|----------|-------|
-| Integer | `0`, `5`, `42` | Accepted wherever numeric expressions are allowed |
-| Float | `9.8`, `0.05`, `-3.2` | Negative values are parsed via unary minus |
-| String | `"Earth"` | Used for `branch` labels |
-| Boolean flags | `true`, `false` | Accepted by `air_resistance` |
-
-Important:
-
-- Variables are numeric at runtime.
-- There are no user-declared string or boolean variables in the current implementation.
-- Planet names such as `earth` and projectile names such as `ball` are identifiers, not strings.
-
-### Variables & Expressions
-
-ProjX supports numeric variables and arithmetic expressions.
-
-| Keyword | Syntax | Description |
-|--------|--------|-------------|
-| `let` | `let x = 10` | Declare a numeric variable |
-| `set` | `set x = x + 1` | Reassign an existing variable |
-
-Examples:
-
-```px
-let g = 9.8
-let v0 = 25 + 5
-set v0 = v0 * 2
-```
-
-Expressions can contain:
-
-- numeric literals
-- numeric variables
-- arithmetic operators
-- parenthesized arithmetic expressions
-- dot queries such as `range.ball()` or `max_height.ball(9.8)`
-
-### Projectile Keywords
-
-`projectile` defines a projectile configuration either at top level or inside a `simulate` block.
-
-```px
-projectile cannon {
-  angle 45
-  angle_azimuth 30
-  speed 70
-  launch_from (20, 30, 40)
-  mass 5.0
-  drag_coefficient 0.3
-  cross_section 0.05
-}
-```
-
-| Keyword | Syntax | Description |
-|--------|--------|-------------|
-| `projectile` | `projectile <name> { ... }` | Start a projectile block |
-| `angle` | `angle <expr>` | Elevation angle in degrees |
-| `angle_azimuth` | `angle_azimuth <expr>` | Horizontal aim angle in degrees; optional, defaults to `0` |
-| `speed` | `speed <expr>` | Initial launch speed |
-| `launch_from` | `launch_from (x, y, z)` or `launch_from (x, y, z, t)` | Initial position and optional launch delay |
-| `mass` | `mass <expr>` | Optional mass, used in drag-aware simulation |
-| `drag_coefficient` | `drag_coefficient <expr>` | Optional drag coefficient |
-| `cross_section` | `cross_section <expr>` | Optional cross-sectional area |
-
-Rules:
-
-- `angle` is mandatory.
-- `speed` is mandatory.
-- Other projectile fields are optional.
-- Projectile properties can appear in any order inside the block.
-
-### Simulation Keywords
-
-`simulate` runs a physics scenario and generates output.
-
-```px
 simulate {
   gravity 9.8
   air_resistance true
   air_density 1.225
-  wind_x 0
-  wind_y 4
-  wind_z 2
-  plot cannon
-  range cannon
-  max_height cannon
-  check range.cannon() > 200
+  wind_x 2.0
+  wind_y 0
+  plot rocket
+  range rocket
+  max_height rocket
 }
 ```
 
-| Keyword | Syntax | Description |
-|--------|--------|-------------|
-| `simulate` | `simulate { ... }` | Start a simulation block |
-| `gravity` | `gravity <expr>` | Set gravity for the block |
-| `air_resistance` | `air_resistance true` | Enable or disable drag calculations |
-| `air_density` | `air_density <expr>` | Air density used when drag is enabled |
-| `wind_x` | `wind_x <expr>` | Wind along the X axis |
-| `wind_y` | `wind_y <expr>` | Wind along the Y axis |
-| `wind_z` | `wind_z <expr>` | Wind along the Z axis |
-| `plot` | `plot <projectile>` | Plot a projectile trajectory |
-| `range` | `range <projectile>` | Report the projectile's range |
-| `max_range` | `max_range <projectile>` | Report ideal maximum range |
-| `max_height` | `max_height <projectile>` | Report maximum height |
-| `max_rectangle` | `max_rectangle <projectile>` | Report the maximum area rectangle under the arc |
-| `min_vel` | `min_vel <projectile> tower (x, h)` | Compute minimum launch velocity needed to clear a tower |
-| `collide` | `collide <p1> <p2>` | Check whether two projectiles collide |
-| `collision_vel` | `collision_vel <p1> <p2>` | Report collision velocity components |
-| `min_dist` | `min_dist <p1> <p2>` | Report minimum distance between two trajectories |
-| `bounce` | `bounce <projectile> times <n> restitution <r>` | Generate bounce arcs |
-| `check` | `check <condition>` | Evaluate a condition and record pass/fail |
-| `projectile` | `projectile <name> { ... }` | Inline projectile declaration inside the simulation |
+### Output Result
 
-Notes:
+Running a `.px` script produces an `.html` file that can be opened in a browser. A ready-made example is already included:
 
-- `air_resistance` also accepts a numeric literal; values greater than `0` are treated as enabled.
-- Inline `projectile` definitions inside a `simulate` block become available to later statements in that block.
-
-### Fork Keywords
-
-`fork` creates multiple simulation-style branches for an already declared projectile.
-
-```px
-fork cannon {
-  branch "Earth" {
-    gravity 9.8
-    plot cannon
-  }
-  branch "Moon" {
-    gravity 1.6
-    plot cannon
-  }
-}
-```
-
-| Keyword | Syntax | Description |
-|--------|--------|-------------|
-| `fork` | `fork <projectile> { ... }` | Start a branching comparison |
-| `branch` | `branch "Label" { ... }` | Define one branch with its own simulation statements |
-
-Notes:
-
-- The projectile named after `fork` must already exist.
-- Each branch body uses the same simulation-statement language as `simulate`.
-- In practice, each branch should contain a `gravity` statement and at least one `plot`.
-
-### Game Keywords
-
-`game` creates a game scenario for the generated HTML UI.
-
-```px
-game {
-  planet earth
-  level 1
-  lives 3
-}
-```
-
-| Keyword | Syntax | Description |
-|--------|--------|-------------|
-| `game` | `game { ... }` | Start a game block |
-| `planet` | `planet earth` | Select planet/environment |
-| `level` | `level <expr>` | Numeric game level |
-| `lives` | `lives <expr>` | Number of lives |
-
-Valid planets checked by the semantic checker:
-
-- `earth`
-- `moon`
-- `mars`
-- `jupiter`
-- `sun`
-
-Current parser rule:
-
-- The fields must appear in the order `planet`, then `level`, then `lives`.
-
-### Control Flow Keywords
-
-Control flow is available both at top level and, for most cases, inside `simulate` blocks.
-
-| Keyword | Syntax | Description |
-|--------|--------|-------------|
-| `for` | `for i from 1 to 10 step 1 { ... }` | Numeric loop with inclusive upper bound behavior in the evaluator |
-| `from` | used in `for` | Loop start |
-| `to` | used in `for` | Loop end |
-| `step` | used in `for` | Loop increment |
-| `repeat` | `repeat 5 { ... }` | Repeat a block a fixed number of times |
-| `while` | `while x < 10 { ... }` | Loop while a condition holds |
-| `if` | `if x > 0 { ... }` | Conditional execution |
-| `else` | `else { ... }` | Alternate branch |
-| `let` | `let x = 5` | Variable declaration |
-| `set` | `set x = 7` | Variable reassignment |
-
-Example:
-
-```px
-for a from 15 to 75 step 15 {
-  projectile sweep {
-    angle a
-    speed 70
-  }
-
-  simulate {
-    gravity 9.8
-    plot sweep
-  }
-}
-```
-
-### Dot Queries
-
-ProjX also supports query-style expressions that can be used in `let`, `set`, comparisons, and `check` conditions.
-
-| Query | Syntax | Description |
-|-------|--------|-------------|
-| Range | `range.ball()` or `range.ball(g)` | Range of projectile `ball` |
-| Max range | `max_range.ball()` or `max_range.ball(g)` | Maximum theoretical range |
-| Max height | `max_height.ball()` or `max_height.ball(g)` | Maximum height |
-| Max rectangle | `max_rectangle.ball()` or `max_rectangle.ball(g)` | Maximum rectangle area under the arc |
-| Min velocity | `min_vel.ball(x, h)` or `min_vel.ball(x, h, g)` | Minimum velocity to clear a tower |
-| Collision | `collide.(p1, p2)` or `collide.(p1, p2, g)` | Returns `1` for hit, `0` for miss |
-| Min distance | `min_dist.(p1, p2)` or `min_dist.(p1, p2, g)` | Minimum distance between two projectiles |
-
-Example:
-
-```px
-let r = range.ball()
-let mh = max_height.ball(9.8)
-
-if range.ball() > 100 and max_height.ball() > 20 {
-  let ok = 1
-}
-```
-
-### Semantic Rules
-
-The checker currently enforces these important rules:
-
-- Variables must be declared with `let` before they are used.
-- `set` can only update an already declared variable.
-- A variable cannot be declared twice in the same scope with `let`.
-- A projectile must be declared before it is queried, plotted, forked, or compared.
-- Every `simulate` block must contain exactly one `gravity` statement.
-- Every `simulate` block must contain at least one `plot` statement.
-- Every `fork` branch is validated like a simulation block, so the same gravity/plot expectations apply there.
-- Every `projectile` block must include both `angle` and `speed`.
-- `game` planets must be one of `earth`, `moon`, `mars`, `jupiter`, or `sun`.
-
-### Errors
-
-Typical errors you may encounter:
-
-| Category | Example |
-|----------|---------|
-| Lex error | unexpected character, unterminated string |
-| Parse error | missing `angle` or `speed`, malformed `launch_from`, unexpected token in a block |
-| Semantic error | using an undeclared variable, referencing an unknown projectile, invalid planet, missing `gravity`/`plot` in a simulation |
-| Runtime error | division by zero |
+- [Sample script](input/queries.px)
+- [Generated interactive output](input/queries.html)
 
 ---
 
-## Sample Code
+## Installation and Usage
 
-The following `.px` program uses variables, a 3D projectile, a drag-enabled simulation, a fork comparison, a parameter sweep, and a game block.
+### 1. Install Core Dependencies
 
-```px
-# ProjX sample
+Before building ProjX, install:
 
-let g_earth = 9.8
-let v0 = 70
+- **OCaml**
+- **opam**
+- **Dune**
+- **Yojson**
+- **OUnit2** (for tests)
 
-projectile cannon {
-  angle 45
-  angle_azimuth 30
-  speed v0
-  launch_from (20, 30, 40)
-  mass 5.0
-  drag_coefficient 0.3
-  cross_section 0.05
-}
-
-simulate {
-  gravity g_earth
-  air_resistance true
-  air_density 1.225
-  wind_y 4.0
-  wind_z 5.0
-  plot cannon
-  range cannon
-  max_range cannon
-  max_height cannon
-  check range.cannon() > 200
-}
-
-fork cannon {
-  branch "Earth" {
-    gravity 9.8
-    plot cannon
-  }
-  branch "Moon" {
-    gravity 1.6
-    plot cannon
-  }
-  branch "Mars" {
-    gravity 3.72
-    plot cannon
-  }
-}
-
-for a from 15 to 75 step 15 {
-  projectile sweep {
-    angle a
-    angle_azimuth a
-    speed v0
-  }
-
-  simulate {
-    gravity g_earth
-    plot sweep
-    check range.sweep() > 100
-  }
-}
-
-game {
-  planet earth
-  level 1
-  lives 3
-}
-```
-
----
-
-## Generated Output
-
-Running `projx` currently produces two outputs:
-
-- pretty-printed JSON on stdout
-- a standalone HTML file written next to the input file, unless you pass an explicit output path
-
-The generated HTML includes:
-
-- tabbed simulation/fork/game sessions
-- a metrics sidebar for query results and checks
-- trajectory plots
-- a 2D/3D toggle for rendered simulations
-- a simple game view for `game` blocks
-
-Asset lookup:
-
-- planet images are searched under `<directory-of-input>/assets/`
-- if an image is missing, the generated page falls back to procedural visuals
-
----
-
-## Prerequisites
-
-- [OCaml](https://ocaml.org/) 5.x recommended
-- [opam](https://opam.ocaml.org/)
-- [dune](https://dune.build/) 3.21 or newer
-- [`yojson`](https://opam.ocaml.org/packages/yojson/) for JSON output
-
----
-
-## Environment Setup
-
-### 1. Install opam and OCaml
-
-#### Ubuntu / Debian
+**Windows (recommended via WSL2)**
 
 ```bash
 sudo apt update
-sudo apt install opam m4 pkg-config build-essential
+sudo apt install opam m4 pkg-config
 opam init
 eval $(opam env)
-opam switch create 5.1.1
-eval $(opam env)
+opam install dune yojson ounit2
 ```
 
-#### macOS
+**macOS**
 
 ```bash
 brew install opam
 opam init
 eval $(opam env)
-opam switch create 5.1.1
+opam install dune yojson ounit2
+```
+
+**Linux (Ubuntu/Debian)**
+
+```bash
+sudo apt update
+sudo apt install opam m4 pkg-config
+opam init
 eval $(opam env)
+opam install dune yojson ounit2
 ```
 
-### 2. Install project dependencies
+### 2. Clone the Repository
 
 ```bash
-opam install dune yojson
+git clone <your-repository-url>
+cd <repository-folder>
 ```
 
-### 3. Verify installation
-
-```bash
-ocaml -version
-dune --version
-opam --version
-```
-
----
-
-## Build & Run Guide
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/username/ProjX.git
-cd ProjX
-```
-
-### 2. Build the project
+### 3. Build the Compiler
 
 ```bash
 dune build
 ```
 
-### 3. Run the sample program
+### 4. Run a ProjX Program
 
 ```bash
 dune exec projx -- input/queries.px
 ```
 
-This will:
-
-1. tokenize the `.px` source
-2. parse it into the AST
-3. run semantic checks
-4. evaluate the program and print JSON to stdout
-5. write `input/queries.html`
-
-### 4. Write to a custom HTML file
-
-```bash
-dune exec projx -- input/queries.px output.html
-```
-
-### 5. Open the generated result
-
-Open the generated `.html` file directly in any browser. No local server is required.
-
----
-
-## Running Tests
-
-The project includes tokenizer and parser test executables under `test/`.
-
-### Run all tests
-
-```bash
-dune test
-```
-
-### What gets tested
-
-- tokenizer keyword recognition
-- identifiers, numbers, operators, and punctuation
-- projectile, simulate, fork, and game parsing
-- arithmetic expressions and precedence
-- loops and conditionals
-- query syntax such as `range.ball()`
-
----
-
-## Common Issues
-
-- `command not found: dune`
-  - Install dune with `opam install dune`
-
-- `Library "yojson" not found`
-  - Install it with `opam install yojson`
-
-- build artifacts look stale
-  - Run `dune clean` followed by `dune build`
-
-- semantic error about missing `gravity` or `plot`
-  - Ensure every `simulate` block, and every `fork` branch, includes the required statements
-
-- semantic error about `set`
-  - Declare the variable first with `let`
-
----
-
-## Quick Start
-
-```bash
-git clone https://github.com/username/ProjX.git
-cd ProjX
-opam install dune yojson
-dune build
-dune exec projx -- input/queries.px
-```
-
-Then open `input/queries.html` in your browser.
-
----
-
-## Compilation Pipeline
+This will generate:
 
 ```text
-.px source file
-      |
-      v
-Tokenizer (lib/tokenizer.ml)
-  - converts characters into tokens
-  - recognizes keywords, numbers, strings, operators, and comments
-
-      |
-      v
-Parser (lib/parser.ml)
-  - builds the AST
-  - parses projectile blocks, simulate blocks, fork/game blocks,
-    control flow, conditions, and dot queries
-
-      |
-      v
-AST (lib/ast.ml)
-  - represents expressions, conditions, projectiles,
-    simulation statements, branches, and top-level statements
-
-      |
-      v
-Semantic Checker (lib/checker.ml)
-  - validates declaration order
-  - enforces required simulation statements
-  - validates game planets
-
-      |
-      v
-Evaluator + Physics Engine (lib/eval.ml + lib/physics.ml)
-  - computes trajectories, ranges, heights, collisions, and bounces
-
-      |
-      v
-JSON Emitter (lib/json_emit.ml)
-  - produces scenario data for the frontend
-
-      |
-      v
-HTML Generator (bin/main.ml)
-  - injects JSON into a standalone interactive page
+input/queries.html
 ```
 
-### Module Dependency Chain
+Open the generated HTML file in a browser to interact with the output.
 
-```text
-tokenizer.ml
-  -> parser.ml
-     -> ast.ml
-  -> checker.ml
-  -> eval.ml
-     -> env.ml
-     -> physics.ml
-  -> json_emit.ml
-  -> bin/main.ml
+### 5. Run Tests
+
+```bash
+dune runtest
 ```
 
 ---
 
-## Project Structure
+## Why Users Enjoy ProjX More Than Regular Physics Engines
 
-```text
-.
-├── bin/
-│   ├── dune
-│   └── main.ml           # CLI entry point and HTML template generation
-├── input/
-│   ├── queries.px        # sample ProjX program
-│   ├── queries.html      # generated HTML example
-│   └── assets/           # optional planet images for the generated UI
-├── lib/
-│   ├── ast.ml            # AST definitions
-│   ├── checker.ml        # semantic validation
-│   ├── env.ml            # runtime environment
-│   ├── error.ml          # error helpers/types
-│   ├── eval.ml           # evaluator
-│   ├── json_emit.ml      # JSON generation for the frontend
-│   ├── my_utils.ml       # utility helpers
-│   ├── parser.ml         # recursive-descent parser
-│   ├── physics.ml        # projectile physics/math engine
-│   ├── pretty.ml         # AST pretty-printer
-│   ├── projx.ml          # library module re-exports
-│   ├── tokenizer.ml      # tokenizer / lexer
-│   └── dune
-├── test/
-│   ├── dune
-│   ├── test_ProjX.ml
-│   ├── test_parser.ml
-│   └── test_tokenizer.ml
-├── dune-project
-└── ProjX.opam
+### 1. Parameter Sweeps with Simple Loops
+
+ProjX lets users test many launch values quickly using built-in loops.
+
+```px
+for a from 10 to 80 step 10 {
+  projectile test {
+    angle a
+    speed 40
+  }
+
+  simulate {
+    gravity 9.8
+    plot test
+    range test
+  }
+}
+```
+
+Perfect for experiments, optimization, and assignments without repeating manual work.
+
+---
+
+### 2. Rich Conditional Logic
+
+ProjX includes programming features like:
+
+- `if`
+- `else`
+- `for`
+- `while`
+- `repeat`
+
+This helps users create smarter and more dynamic simulations directly inside the DSL.
+
+```px
+let g = 9.8
+
+if g > 5 {
+  projectile ball {
+    angle 45
+    speed 35
+  }
+
+  simulate {
+    gravity g
+    plot ball
+  }
+} else {
+  projectile test {
+    angle 25
+    speed 20
+  }
+
+  simulate {
+    gravity g
+    plot test
+  }
+}
 ```
 
 ---
 
-## Contributing
+### 3. Easy Game Building with Planet Gravity
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Make your changes.
-4. Run `dune build` and `dune test`.
-5. Open a pull request.
+ProjX makes it easy to build simple projectile-based game scenarios using planets, levels, and lives.
 
-If you extend the language, make sure to update:
+```px
+game {
+  planet moon
+  level 2
+  lives 3
+}
+```
 
-- `lib/tokenizer.ml`
-- `lib/parser.ml`
-- `lib/ast.ml`
-- `lib/checker.ml`
-- `lib/eval.ml`
-- `lib/json_emit.ml`
-- tests in `test/`
-- this `README.md`
+Users can explore how gravity changes gameplay across **Earth**, **Moon**, **Mars**, **Jupiter**, and even the **Sun**.
+
+---
+
+### 4. Fork Block for Easy Comparison
+
+The `fork` block compares the same projectile in multiple environments at once.
+
+```px
+projectile ball {
+  angle 45
+  speed 50
+}
+
+fork ball {
+  branch "Earth"   { gravity 9.8 }
+  branch "Moon"    { gravity 1.62 }
+  branch "Mars"    { gravity 3.72 }
+  branch "Jupiter" { gravity 24.8 }
+}
+```
+
+Great for side-by-side comparison of gravity, bounce behavior, and environment-specific outcomes.
+
+---
+
+### 5. Why ProjX Is Unique from Regular Physics Engines
+
+Most regular physics engines focus on raw simulation. ProjX goes further by combining a DSL, built-in physics queries, programmable control flow, and browser-ready output in one tool.
+
+```px
+projectile probe {
+  angle 40
+  speed 50
+  mass 0.5
+  drag_coefficient 0.47
+  cross_section 0.01
+}
+
+let ideal = max_range.probe(9.8)
+
+simulate {
+  gravity 9.8
+  air_resistance true
+  air_density 1.225
+  wind_x -3
+  wind_y 0
+  plot probe
+  range probe
+  max_height probe
+  check range.probe() < ideal
+}
+```
+
+What makes ProjX stand out:
+
+- it is not just a simulator, but also a small programming language
+- it supports both formula-based queries and drag-aware numerical simulation
+- it can compare scenarios, run sweeps, and generate interactive output from one script
+- it blends classroom physics, experimentation, and lightweight game ideas in the same environment
+
+---
+
+## In Short
+
+**ProjX is not just a physics engine - it is a smarter, easier, and more interactive way to learn, test, and visualize projectile motion.**
+
+---
+
+## Use Cases
+
+- **Academic visualization:** Great for explaining projectile motion, gravity variation, drag, and optimization in classrooms or demos.
+- **Comparative experiments:** Useful for side-by-side studies of Earth vs. Moon vs. Mars trajectories.
+- **Programming-based assignments:** Lets students combine physics and control flow in one script.
+- **Interactive browser output:** Suitable for presentations, labs, and lightweight simulation showcases.
+- **Game-inspired exploration:** Useful for creating simple gravity-based challenge scenarios with planets and levels.
+
+---
+
+## Group 34: Team Contributions
+
+| Team Member | Primary Contributions | Contribution % |
+| :--- | :--- | :--- |
+| **Pranathi** | **Core:** Implemented the tokenizer, parser, AST, checker, pretty-printing, and error-handling modules.<br>**QA:** Wrote test cases for the compiler pipeline. | **25 %** |
+| **Bhuvan** | **Core:** Enhanced the tokenizer, parser, AST, and other supporting modules to integrate newly added language features.<br>**Frontend & Docs:** Upgraded the frontend with 3D visualization using Three.js after the user study and updated the `README.md`. | **25 %** |
+| **Sai Chaitanya** | **Core:** Contributed to the checker, pretty-printing, environment, and evaluation modules.<br>**Docs:** Helped document the project and contributed to the `README.md`. | **15 %** |
+| **Sanjay** | **Frontend:** Developed the frontend, including the 2D visualization system and game mode.<br>**Docs & Study:** Wrote the DSL user guide used during the survey process. | **20 %** |
+| **Ridhi Chopra** | **User Study & Presentation:** Supported the user survey process, created the Google Form for data collection, and prepared the project presentation. | **15 %** |
+
+---
+
+## Notes
+
+- The project layout in this README matches the top-level repository structure shown in your repo.
+- The included `ProjX.opam` metadata is still minimal, so the installation steps above use the concrete libraries referenced by the Dune files.
