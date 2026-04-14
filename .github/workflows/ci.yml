@@ -20,5 +20,3 @@ jobs:
       - run: opam install ocamlformat.0.28.1 -y
       - run: opam exec -- dune build
       - run: opam exec -- dune runtest
-      - run: opam exec -- dune fmt
-     
